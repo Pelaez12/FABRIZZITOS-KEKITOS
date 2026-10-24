@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.local/
+.dev.vars*
+.env*
+.cloudflare/
+.wrangler/
+artifacts/
+*.log

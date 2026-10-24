@@ -1,0 +1,7 @@
+{
+  "browser": { "mode": "launch", "executable_path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "headless": true },
+  "start_url": { "url": "https://calendly.com/" },
+  "environment": { "locale": "es-PE", "timezone": "America/Lima", "reduced_motion": "reduce" },
+  "actions": [{ "step_id": "read-public-home", "action": "wait_for", "locator": { "kind": "css", "selector": "body" }, "state": "visible", "timeout_ms": 20000 }],
+  "capture": { "at_end": ["url", "dom", "accessibility"], "after_each_step": [], "events": [], "network": { "request_body": false, "response_body": false, "header_values": false } }
+}
