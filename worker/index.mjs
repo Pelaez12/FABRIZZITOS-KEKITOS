@@ -1,4 +1,5 @@
 import { SETTINGS, BookingError, availableTimes, isDate, validateBooking, slotDate } from '../shared/booking.mjs';
+import { queueStatement, scheduleDelivery, drainOutbox } from './flexqr.mjs';
 
 const MAX_RECEIPT = 5 * 1024 * 1024;
 const MAX_BODY = MAX_RECEIPT + 64 * 1024;
@@ -37,7 +38,7 @@ function confirmation(row, local) {
   return { id: row.id, reference: row.reference, date: row.booking_date, time: row.booking_time, total: row.total_cents, paymentStatus: row.payment_status, fulfillment: row.fulfillment, kekeQty: row.keke_qty, shakeQty: row.shake_qty, local };
 }
 
-async function reserve(request, env) {
+async function reserve(request, env, ctx) {
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin && !(env.LOCAL_PREVIEW === 'true' && origin === 'http://127.0.0.1:5173')) throw new BookingError('Origen de solicitud no permitido.', 403);
   if (!request.headers.get('content-type')?.startsWith('multipart/form-data')) throw new BookingError('Formato de pedido no válido.', 415);
@@ -66,6 +67,8 @@ async function reserve(request, env) {
   const payloadHash = await digest(new TextEncoder().encode(JSON.stringify({ ...booking, receiptHash })));
   if (prior) {
     if (prior.payload_hash !== payloadHash) throw new BookingError('Este intento corresponde a otro pedido. Inicia una nueva reserva.', 409);
+    await queueStatement(env, prior).run();
+    scheduleDelivery(env, ctx, prior.id);
     return json(confirmation(prior, env.LOCAL_PREVIEW === 'true'));
   }
   const id = crypto.randomUUID();
@@ -83,6 +86,7 @@ async function reserve(request, env) {
     const event = (type, title) => env.DB.prepare('INSERT INTO admin_events (id,reservation_id,event_type,title,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM reservations WHERE id = ?)').bind(crypto.randomUUID(), id, type, title, createdAt, id);
     const statements = [insert, event('reservation.created', 'Tienes una nueva reserva')];
     if (receiptBytes) statements.push(event('payment.review_requested', 'Tienes un nuevo pago por revisar'));
+    statements.push(queueStatement(env, { id, reference, customer_name: booking.name, phone: booking.phone, fulfillment: booking.fulfillment, address: booking.address, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty, payment_status: paymentStatus, slot_at: slotDate(booking.date, booking.time).toISOString(), total_cents: booking.total, created_at: createdAt }));
     const results = await env.DB.batch(statements);
     if (!results[0].meta.changes) throw new BookingError('Ya no quedan suficientes kekitos para ese día. Elige otra fecha o reduce la cantidad.', 409, 'stock');
   } catch (error) {
@@ -91,16 +95,21 @@ async function reserve(request, env) {
     if (prior && prior.payload_hash === payloadHash) {
       // Preserve this receipt if the insert committed but its response was lost.
       if (receiptKey && prior.receipt_key !== receiptKey) await env.RECEIPTS.delete(receiptKey);
+      scheduleDelivery(env, ctx, prior.id);
       return json(confirmation(prior, env.LOCAL_PREVIEW === 'true'));
     }
     if (receiptKey) await env.RECEIPTS.delete(receiptKey);
     throw error;
   }
+  scheduleDelivery(env, ctx, id);
   return json(confirmation({ id, reference, booking_date: booking.date, booking_time: booking.time, total_cents: booking.total, payment_status: paymentStatus, fulfillment: booking.fulfillment, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty }, env.LOCAL_PREVIEW === 'true'), 201);
 }
 
 export default {
-  async fetch(request, env) {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(drainOutbox(env));
+  },
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (request.method === 'GET' && url.pathname === '/api/config') return json({ ...SETTINGS, local: env.LOCAL_PREVIEW === 'true', receiptsAvailable: Boolean(env.RECEIPTS) });
@@ -117,7 +126,7 @@ export default {
         }
         return json({ days });
       }
-      if (request.method === 'POST' && url.pathname === '/api/reservations') return await reserve(request, env);
+      if (request.method === 'POST' && url.pathname === '/api/reservations') return await reserve(request, env, ctx);
       if (url.pathname.startsWith('/api/')) return json({ error: 'Ruta no disponible.' }, 404);
       if (!['GET', 'HEAD'].includes(request.method)) return new Response('Método no permitido', { status: 405, headers: { Allow: 'GET, HEAD' } });
       if (env.ASSETS) {

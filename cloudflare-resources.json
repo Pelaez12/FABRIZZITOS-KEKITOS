@@ -4,8 +4,12 @@
   "compatibility_date": "2026-10-24",
   "bindings": [
     { "type": "d1", "name": "DB", "id": "e934c0ae-6d6c-4b8f-88bb-6ee30134f9ff" },
-    { "type": "r2_bucket", "name": "RECEIPTS", "bucket_name": "fabrizzitos-comprobantes" }
+    { "type": "r2_bucket", "name": "RECEIPTS", "bucket_name": "fabrizzitos-comprobantes" },
+    { "type": "service", "name": "FLEXQR_PANEL", "service": "flexqr-platform" },
+    { "type": "plain_text", "name": "FLEXQR_COMPANY_ID", "text": "e6d10ec9-9d77-403e-ac6f-9273721fb713" }
   ],
-  "admin_integration": "pending",
+  "keep_bindings": ["secret_text", "secret_key"],
+  "schedules": [{ "cron": "*/5 * * * *" }],
+  "admin_integration": "FLEXQR inbox v1; FLEXQR_INBOX_TOKEN must exist as a Worker secret",
   "push_notifications": "pending"
 }

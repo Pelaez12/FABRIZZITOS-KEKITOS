@@ -8,6 +8,7 @@ const form = new FormData();
 form.set('metadata', new Blob([JSON.stringify({
   main_module: 'index.mjs', compatibility_date: config.compatibility_date,
   bindings: config.bindings,
+  keep_bindings: config.keep_bindings,
   observability: { enabled: true, logs: { enabled: true, invocation_logs: true }, traces: { enabled: true, head_sampling_rate: 0.1 }, redact_query_string: true },
 })], { type: 'application/json' }));
 form.set('index.mjs', new Blob([source], { type: 'application/javascript+module' }), 'index.mjs');
@@ -18,6 +19,7 @@ async function request(suffix, init) {
   return result.result;
 }
 await request(`/workers/scripts/${config.worker_name}`, { method: 'PUT', body: form });
+if (config.schedules) await request(`/workers/scripts/${config.worker_name}/schedules`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config.schedules) });
 await request(`/workers/scripts/${config.worker_name}/subdomain`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: true, previews_enabled: false }) });
 const subdomain = await request('/workers/subdomain');
 console.log(`https://${config.worker_name}.${subdomain.subdomain}.workers.dev`);

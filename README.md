@@ -56,18 +56,30 @@ Los identificadores de los recursos, que no son secretos, están en `cloudflare-
 - D1: `fabrizzitos-reservas`, binding `DB`.
 - R2: `fabrizzitos-comprobantes`, binding `RECEIPTS`.
 - Worker: `fabrizzitos-kekitos`.
-- Esquema: `migrations/0001_initial.sql`, ya aplicado a la base remota inicial.
+- Esquema: `migrations/0001_initial.sql` y `migrations/0002_flexqr_outbox.sql`, aplicados a D1.
 
 El bucket R2 tiene `r2.dev` desactivado y no tiene dominios públicos. El Worker no expone rutas para descargar comprobantes. Solo guarda en D1 la clave del objeto, tipo y SHA-256. No se registran nombres, celulares, direcciones ni imágenes en los logs de la aplicación.
 
 `npm run build` crea `dist/worker/index.mjs`, un módulo autocontenido con los recursos estáticos optimizados. Se puede desplegar con el MCP de Cloudflare utilizando la metadata y los bindings de `cloudflare-resources.json`, o con `npm run deploy` si ya se dispone de un token de Cloudflare en la variable de entorno `CLOUDFLARE_API_TOKEN`. No guardar tokens en archivos ni en el repositorio.
 
-## Integraciones aplazadas por solicitud del propietario
+## Integración con FLEXQR
 
-- **Panel de administración:** `admin_events` funciona como outbox. Cada reserva genera `reservation.created` y, si incluye foto, `payment.review_requested`. Los eventos permanecen `pending`. Todavía no se envían notificaciones al panel ni se implementaron endpoints administrativos públicos.
+Las reservas se guardan primero en D1 junto con una fila inmutable en `flexqr_outbox`. Después se envían desde el servidor al Service binding `FLEXQR_PANEL`, que apunta a `flexqr-platform`. La empresa es `e6d10ec9-9d77-403e-ac6f-9273721fb713`.
+
+La clave solo existe como secreto `FLEXQR_INBOX_TOKEN` en Cloudflare. `keep_bindings` conserva los secretos existentes al desplegar; no exportes su valor al repositorio, al frontend ni a variables `VITE_*`. Para usar `npm run deploy`, la clave ya debe existir en el Worker.
+
+El emisor conserva el mismo `sourceId` y JSON en cada reintento. Solo marca `sent` con HTTP 200/201, `received: true` e ID del panel. Un lease en D1 evita envíos simultáneos. Los fallos temporales usan backoff y `Retry-After`; un cron cada cinco minutos procesa hasta diez pendientes. Errores de datos 400/409/413/415 quedan `blocked` para corrección; 401/403/402 se reintentan con una demora mayor. Los cuerpos de error y datos de clientes nunca van a logs. La vista local nunca envía datos al panel real.
+
+También se incorporan progresivamente las reservas anteriores que sigan activas y tengan una fecha futura; no se remite el historial completado o cancelado. `admin_events` conserva por separado los eventos internos de reserva y pago y no debe confundirse con el acuse de FLEXQR.
+
+El contrato se documenta en [la guía oficial del panel](https://panel.comunidadfortaleza.com/panel/integraciones/pedidos-reservas). La entrega se registra en `flexqr_outbox.status`, `panel_id`, `delivered_at`, `last_http_status` y `last_error_code` sin publicar endpoints administrativos.
+
+## Funciones que requieren ampliar la integración
+
+- **Fotos de comprobantes:** el contrato FLEXQR v1 solo admite `sourceId`, `kind`, `customerName`, `customerPhone`, `summary`, `scheduledAt` y `amountCents`. El resumen indica si hay un comprobante pendiente de revisión, pero no envía la foto, una URL pública ni una credencial de acceso a R2. El panel necesita soporte autenticado adicional para consultar las imágenes.
 - **Revisión de pagos:** los estados `approved` y `rejected` están previstos en el esquema, pero solo deberán modificarse desde una futura API administrativa autenticada. Una reserva sin pagar no equivale a un pago rechazado.
 - **Notificaciones de horneado:** el aviso emergente aparece después de confirmar la reserva, permite cerrarlo o reabrirlo y solicita permiso solo tras pulsar el botón. Todavía no hay suscripción push, VAPID ni envío remoto.
-- **Cancelaciones:** por ahora se solicita contactar por WhatsApp, con mensaje que incluye el código de reserva. Pulsar el enlace no cancela automáticamente la reserva.
+- **Estados y cancelaciones:** la conexión v1 es unidireccional. Cambiar el estado o cancelar en FLEXQR no actualiza la reserva ni libera stock en el aplicativo de origen. Por ahora se solicita contactar por WhatsApp, con mensaje que incluye el código; la cancelación debe aplicarse también en origen. Se requiere un contrato de retorno autenticado para sincronizar estados.
 
 ## Referencias y archivos
 

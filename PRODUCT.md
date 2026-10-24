@@ -34,4 +34,4 @@ Implementación con etiquetas visibles, navegación por teclado, contraste AA y 
 
 ## Payment and integrations
 
-Yape 955882306, titular Luis Pelaez. El cliente puede adjuntar comprobante o reservar sin pagar. La revisión administrativa y las notificaciones remotas se conectarán después. Nunca afirmar que una captura está validada automáticamente. R2 ya fue habilitado por el propietario y se creó el bucket privado fabrizzitos-comprobantes.
+Yape 955882306, titular Luis Pelaez. El cliente puede adjuntar comprobante o reservar sin pagar. Nunca afirmar que una captura está validada automáticamente. R2 ya fue habilitado por el propietario y se creó el bucket privado fabrizzitos-comprobantes. FLEXQR recibe las reservas por su contrato inbox v1; el envío de fotos y el retorno de estados de pago requieren una ampliación del contrato. Las notificaciones de horneado al cliente siguen pendientes.

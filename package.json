@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "vite build && node scripts/build-worker.mjs",
-    "test": "node --test tests/booking.test.mjs tests/worker.test.mjs",
+    "test": "node --test tests/booking.test.mjs tests/worker.test.mjs tests/flexqr.test.mjs",
     "preview": "node scripts/dev.mjs --preview",
     "deploy": "npm run build && node scripts/deploy.mjs"
   },

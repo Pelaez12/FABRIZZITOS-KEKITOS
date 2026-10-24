@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Miniflare } from 'miniflare';
 import { build } from 'esbuild';
 import { firstAvailableDate, availableTimes, addDays } from '../shared/booking.mjs';
@@ -18,7 +18,9 @@ before(async () => {
   const output = await build({ entryPoints: ['worker/index.mjs'], write: false, bundle: true, format: 'esm', platform: 'browser', target: 'es2022', define: { __STATIC_ASSETS__: '{}' } });
   mf = new Miniflare({ modules: true, script: output.outputFiles[0].text, compatibilityDate: '2026-08-06', d1Databases: { DB: 'fabrizzitos-test' }, r2Buckets: ['RECEIPTS'], bindings: { LOCAL_PREVIEW: 'true' } });
   db = await mf.getD1Database('DB'); bucket = await mf.getR2Bucket('RECEIPTS');
-  for (const sql of (await readFile('migrations/0001_initial.sql', 'utf8')).replace(/--[^\n]*/g, '').split(';').map(s => s.trim()).filter(Boolean)) await db.prepare(sql).run();
+  for (const file of (await readdir('migrations')).filter(file => file.endsWith('.sql')).sort()) {
+    for (const sql of (await readFile(`migrations/${file}`, 'utf8')).replace(/--[^\n]*/g, '').split(';').map(s => s.trim()).filter(Boolean)) await db.prepare(sql).run();
+  }
 });
 after(async () => { await mf?.dispose(); });
 
@@ -26,6 +28,7 @@ test('guarda reserva sin pago y un evento pendiente para el panel', async () => 
   const response = await send(); assert.equal(response.status, 201);
   const result = await response.json(); assert.equal(result.paymentStatus, 'unpaid'); assert.equal(result.total, 400);
   const row = await db.prepare('SELECT * FROM reservations WHERE id = ?').bind(result.id).first(); assert.equal(row.receipt_key, null);
+  const queued = await db.prepare('SELECT * FROM flexqr_outbox WHERE reservation_id = ?').bind(result.id).first(); assert.equal(queued.status, 'queued'); assert.equal(JSON.parse(queued.payload_json).sourceId, `fabrizzitos:${result.id}`);
   const events = await db.prepare('SELECT * FROM admin_events WHERE reservation_id = ?').bind(result.id).all(); assert.equal(events.results.length, 1); assert.equal(events.results[0].delivery_status, 'pending');
 });
 test('reintentar no duplica la reserva ni descuenta stock dos veces', async () => {

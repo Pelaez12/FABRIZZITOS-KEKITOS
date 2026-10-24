@@ -1,6 +1,6 @@
 import { Miniflare } from 'miniflare';
 import { build } from 'esbuild';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, readdir, mkdir } from 'node:fs/promises';
 import { createServer } from 'vite';
 import path from 'node:path';
 
@@ -24,8 +24,10 @@ const mf = new Miniflare({
 });
 await mf.ready;
 const db = await mf.getD1Database('DB');
-const schema = (await readFile('migrations/0001_initial.sql', 'utf8')).replace(/--[^\n]*/g, '').split(';').map(s => s.trim()).filter(Boolean);
-for (const sql of schema) await db.prepare(sql).run();
+for (const file of (await readdir('migrations')).filter(file => file.endsWith('.sql')).sort()) {
+  const schema = (await readFile(`migrations/${file}`, 'utf8')).replace(/--[^\n]*/g, '').split(';').map(s => s.trim()).filter(Boolean);
+  for (const sql of schema) await db.prepare(sql).run();
+}
 let vite;
 if (!preview) { vite = await createServer(); await vite.listen(); }
 console.log(`FABRIZZITO'S KEKITOS: ${preview ? 'http://127.0.0.1:8787' : 'http://127.0.0.1:5173'} (pruebas locales persistentes)`);
