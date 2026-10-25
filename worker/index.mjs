@@ -1,5 +1,6 @@
 import { SETTINGS, BookingError, availableTimes, isDate, validateBooking, slotDate } from '../shared/booking.mjs';
 import { queueStatement, scheduleDelivery, drainOutbox } from './flexqr.mjs';
+import { pushRoutes } from './promotions.mjs';
 
 const MAX_RECEIPT = 5 * 1024 * 1024;
 const MAX_BODY = MAX_RECEIPT + 64 * 1024;
@@ -112,6 +113,8 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
+      const push = await pushRoutes(request, env);
+      if (push) return push;
       if (request.method === 'GET' && url.pathname === '/api/config') return json({ ...SETTINGS, local: env.LOCAL_PREVIEW === 'true', receiptsAvailable: Boolean(env.RECEIPTS) });
       if (request.method === 'GET' && url.pathname === '/api/availability') {
         const month = url.searchParams.get('month');

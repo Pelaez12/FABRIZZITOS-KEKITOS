@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "vite build && node scripts/build-worker.mjs",
-    "test": "node --test tests/booking.test.mjs tests/worker.test.mjs tests/flexqr.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "preview": "node scripts/dev.mjs --preview",
     "deploy": "npm run build && node scripts/deploy.mjs"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0",
     "@fontsource-variable/outfit": "^5.3.0",
     "@phosphor-icons/react": "^2.1.10",
     "motion": "^14.6.0",

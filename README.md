@@ -56,7 +56,7 @@ Los identificadores de los recursos, que no son secretos, están en `cloudflare-
 - D1: `fabrizzitos-reservas`, binding `DB`.
 - R2: `fabrizzitos-comprobantes`, binding `RECEIPTS`.
 - Worker: `fabrizzitos-kekitos`.
-- Esquema: `migrations/0001_initial.sql` y `migrations/0002_flexqr_outbox.sql`, aplicados a D1.
+- Esquema: `migrations/0001_initial.sql`, `migrations/0002_flexqr_outbox.sql` y `migrations/0003_customer_promotions.sql`, aplicados a D1.
 
 El bucket R2 tiene `r2.dev` desactivado y no tiene dominios públicos. El Worker no expone rutas para descargar comprobantes. Solo guarda en D1 la clave del objeto, tipo y SHA-256. No se registran nombres, celulares, direcciones ni imágenes en los logs de la aplicación.
 
@@ -78,7 +78,7 @@ El contrato se documenta en [la guía oficial del panel](https://panel.comunidad
 
 - **Fotos de comprobantes:** el contrato FLEXQR v1 solo admite `sourceId`, `kind`, `customerName`, `customerPhone`, `summary`, `scheduledAt` y `amountCents`. El resumen indica si hay un comprobante pendiente de revisión, pero no envía la foto, una URL pública ni una credencial de acceso a R2. El panel necesita soporte autenticado adicional para consultar las imágenes.
 - **Revisión de pagos:** los estados `approved` y `rejected` están previstos en el esquema, pero solo deberán modificarse desde una futura API administrativa autenticada. Una reserva sin pagar no equivale a un pago rechazado.
-- **Notificaciones de horneado:** el aviso emergente aparece después de confirmar la reserva, permite cerrarlo o reabrirlo y solicita permiso solo tras pulsar el botón. Todavía no hay suscripción push, VAPID ni envío remoto.
+- **Promociones Web Push:** implementadas con consentimiento, baja, VAPID, Service Worker, cuotas y campañas persistentes. Falta transferir de forma segura el secreto compartido `BILLING_GATE_TOKEN` y asociar el binding en el central. Contratos exactos y coordinación: [FLEXQR-PUSH-HANDOFF.md](docs/FLEXQR-PUSH-HANDOFF.md).
 - **Estados y cancelaciones:** la conexión v1 es unidireccional. Cambiar el estado o cancelar en FLEXQR no actualiza la reserva ni libera stock en el aplicativo de origen. Por ahora se solicita contactar por WhatsApp, con mensaje que incluye el código; la cancelación debe aplicarse también en origen. Se requiere un contrato de retorno autenticado para sincronizar estados.
 
 ## Referencias y archivos

@@ -4,6 +4,7 @@ import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/
 import { ArrowLeft, ArrowRight, Bell, CalendarBlank, CaretLeft, CaretRight, Check, CheckCircle, Clock, Copy, MapPin, Minus, Plus, ShieldCheck, ShoppingBag, Truck, UploadSimple, WhatsappLogo, X } from '@phosphor-icons/react';
 import '@fontsource-variable/outfit';
 import './style.css';
+import Promotions from './Promotions.jsx';
 import { SETTINGS, availableTimes, firstAvailableDate, limaDate, addDays, calculateTotal, money, validateBooking } from '../shared/booking.mjs';
 
 const initialDate = firstAvailableDate();
@@ -87,30 +88,17 @@ function Calendar({ data, setData, availability, month, setMonth, loading, error
 function Notifications() {
   const dialogRef = useRef(null);
   const [open, setOpen] = useState(true);
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [granted, setGranted] = useState(false);
   useEffect(() => {
     if (open && !dialogRef.current?.open) dialogRef.current?.showModal();
     if (!open && dialogRef.current?.open) dialogRef.current.close();
   }, [open]);
-  const activate = async () => {
-    if (!('Notification' in window)) { setMessage('Este navegador no permite activar notificaciones. Prueba desde un navegador compatible.'); return; }
-    setBusy(true);
-    try {
-      const permission = await Notification.requestPermission();
-      setGranted(permission === 'granted');
-      setMessage(permission === 'granted' ? 'Permiso activado en este navegador. Los avisos de horneado estarán disponibles cuando conectemos el servicio de notificaciones.' : permission === 'denied' ? 'Las notificaciones están bloqueadas. Puedes cambiar el permiso en la configuración de tu navegador.' : 'Puedes activar las notificaciones más adelante.');
-    } catch { setMessage('No se pudo solicitar el permiso. Puedes intentarlo desde la configuración del navegador.'); }
-    finally { setBusy(false); }
-  };
   return <>
     <button className="text-button notification-reopen" type="button" onClick={() => setOpen(true)}><Bell size={19} />Recibir avisos de horneado</button>
     <dialog className="notification-dialog" ref={dialogRef} aria-labelledby="notification-title" aria-describedby="notification-description" onClose={() => setOpen(false)} onClick={event => { if (event.target === event.currentTarget) setOpen(false); }}>
       <div className="notification-modal-content">
         <button type="button" className="icon-button notification-close" aria-label="Cerrar aviso de notificaciones" onClick={() => setOpen(false)}><X size={21} /></button>
         <img className="notification-art" src="/images/notifications.webp" alt="Activa las notificaciones de Fabrizzito's Kekitos para enterarte cuando estamos horneando" width="360" height="360" />
-        <div className="notification-copy"><span className="notification-bell"><Bell size={28} weight="duotone" /></span><h2 id="notification-title">Que no se te pase el próximo horneado.</h2><p id="notification-description">Activa el permiso de tu navegador para dejar todo listo. Pronto conectaremos los avisos de nuestros kekitos recién horneados.</p><button className="button primary" disabled={busy || granted} onClick={activate}>{busy ? 'Solicitando permiso…' : granted ? 'Permiso activado' : 'Activar notificaciones'}{granted ? <Check size={19} /> : <Bell size={19} />}</button><button className="text-button notification-later" type="button" onClick={() => setOpen(false)}>{granted ? 'Volver a mi reserva' : 'Ahora no'}</button>{message && <p className="permission-message" role="status">{message}</p>}</div>
+        <div className="notification-copy"><span className="notification-bell"><Bell size={28} weight="duotone" /></span><h2 id="notification-title">Que no se te pase el próximo horneado.</h2><p id="notification-description">Entérate de nuestras ofertas y próximos horneados.</p><Promotions /><button className="text-button notification-later" type="button" onClick={() => setOpen(false)}>Volver a mi reserva</button></div>
       </div>
     </dialog>
   </>;
@@ -255,6 +243,7 @@ function App() {
       <aside className="order-summary" aria-label="Resumen del pedido"><div className="summary-heading"><ShoppingBag size={21} /><h3>Tu reserva</h3></div><div className="summary-lines" aria-live="polite">{data.kekeQty > 0 && <div><span>{data.kekeQty} × Kekito proteico</span><strong>{money(data.kekeQty * 400)}</strong></div>}{data.shakeQty > 0 && <div><span>{data.shakeQty} × Batido proteico</span><strong>{money(data.shakeQty * 1200)}</strong></div>}{data.kekeQty + data.shakeQty === 0 && <p>Agrega un producto para comenzar.</p>}<div><span>{data.fulfillment === 'pickup' ? 'Recojo en local' : 'Delivery · Jesús María'}</span><strong>{data.fulfillment === 'pickup' ? 'Gratis' : 'S/ 6.00'}</strong></div></div><div className="summary-total"><span>Total</span><strong>{money(total)}</strong></div><div className="summary-schedule"><CalendarBlank size={20} /><div><span>{data.date ? dateLabel(data.date) : 'Tu fecha está por elegir'}</span>{data.time && <strong>{timeLabel(data.time)}</strong>}</div></div><div className="summary-address"><MapPin size={20} /><span>{data.fulfillment === 'pickup' ? SETTINGS.address : 'Delivery de kekitos solo en Jesús María'}</span></div><p className="summary-footnote">Tu reserva se confirma al terminar el formulario.</p></aside></div></section></>}
       {result && <Confirmation result={result} data={data} onReset={() => { setResult(null); setData(initial); setReceipt(null); setStep(0); keyRef.current = null; setRevision(r => r + 1); }} />}
       <section className="details" id="details"><div><h2>Una pausa rica,<br />sin complicarte.</h2><p>Reserva con tiempo y elige cómo recibir tu pedido.</p></div><div className="detail-items"><div><CalendarBlank size={25} /><h3>Elige con 48 h de anticipación</h3><p>Lunes a viernes, de 6 a 10 p. m. Horarios cada media hora.</p></div><div><MapPin size={25} /><h3>Pasa por tus favoritos</h3><p>Te esperamos en Av. Talara 450, Jesús María. Delivery de kekitos en el distrito por S/6.</p></div><div><WhatsappLogo size={25} /><h3>Si cambias de planes, avisa</h3><p>Escríbenos al <a href={`https://wa.me/51${SETTINGS.cancellationPhone}`} target="_blank" rel="noreferrer">992 272 521</a> para cancelar. Te estaremos esperando con tu pedido preparado.</p></div></div></section>
+      <section className="promotions-section" id="promociones"><div><span className="eyebrow">DEL HORNO A TU PANTALLA</span><h2>Una buena pausa empieza con un aviso.</h2></div><Promotions /></section>
       <section className="location-section" id="ubicacion" aria-labelledby="location-title"><div className="location-copy"><span className="location-icon"><MapPin size={26} /></span><h2 id="location-title">Tu pedido te espera aquí.</h2><p className="location-address">{SETTINGS.address}</p><p>Lunes a viernes<br /><strong>6:00 a 10:00 p. m.</strong></p><a className="button secondary" href="https://www.google.com/maps/search/?api=1&query=Av.+Talara+450,+Jes%C3%BAs+Mar%C3%ADa,+Lima" target="_blank" rel="noreferrer">Abrir Google Maps<ArrowUpRightIcon /></a><p className="location-delivery">Delivery de kekitos únicamente dentro de Jesús María.</p></div><iframe className="pickup-map" src={pickupMap} title="Mapa del punto de recojo en Av. Talara 450, Jesús María" width="600" height="450" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" /></section>
     </main><footer><span>FABRIZZITO'S KEKITOS</span><p>Banana, avena y una buena pausa.</p><a href={`https://wa.me/51${SETTINGS.cancellationPhone}`} target="_blank" rel="noreferrer"><WhatsappLogo size={18} />Escríbenos</a></footer>
   </MotionConfig>;

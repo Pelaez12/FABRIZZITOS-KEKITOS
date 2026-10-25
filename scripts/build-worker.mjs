@@ -3,6 +3,7 @@ import { readdir, readFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const types = { '.html': 'text/html;charset=utf-8', '.css': 'text/css;charset=utf-8', '.js': 'application/javascript;charset=utf-8', '.webp': 'image/webp', '.png': 'image/png', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
+types['.webmanifest'] = 'application/manifest+json';
 const assets = {};
 async function collect(dir) {
   for (const file of await readdir(dir, { withFileTypes: true })) {
