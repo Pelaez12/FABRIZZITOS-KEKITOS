@@ -48,6 +48,16 @@ test('limita solicitudes públicas por IP de Cloudflare', async () => {
   for (let n = 0; n < 10; n++) assert.equal((await subscribe(subscription(), { headers: { 'CF-Connecting-IP': 'same' } })).status, 200);
   assert.equal((await subscribe(subscription(), { headers: { 'CF-Connecting-IP': 'same' } })).status, 429);
 });
+test('ambos dominios exactos permiten alta y baja; rechaza variantes y orígenes ausentes', async () => {
+  for (const origin of [ORIGIN, 'https://reserva.comunidadfortaleza.com']) {
+    const sub = subscription();
+    assert.equal((await subscribe(sub, { headers: { Origin: origin } })).status, 200);
+    assert.equal((await call('unsubscribe', { subscription: sub }, { headers: { Origin: origin } })).status, 200);
+  }
+  for (const origin of ['', 'null', 'http://reserva.comunidadfortaleza.com', 'https://reserva.comunidadfortaleza.com.evil.test', 'https://otro.comunidadfortaleza.com', 'https://reserva.comunidadfortaleza.com:444', 'https://reserva.comunidadfortaleza.com/']) {
+    for (const route of ['subscribe', 'unsubscribe']) assert.equal((await call(route, { subscription: subscription(), consent: true, consentVersion: 'promotions-v1', permission: 'granted' }, { headers: { Origin: origin } })).status, 403, `${route}: ${origin}`);
+  }
+});
 test('superadmin no salta bearer, empresa ni vencimiento', async () => {
   assert.equal((await call('status', {}, { headers: { Authorization: '', 'X-Flexqr-Superadmin': '1' } })).status, 401);
   assert.equal((await call('status', {}, { headers: { 'X-Flexqr-Company': 'another', 'X-Flexqr-Superadmin': '1' } })).status, 403);

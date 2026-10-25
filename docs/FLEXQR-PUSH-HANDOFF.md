@@ -72,7 +72,7 @@ Sin cuerpo. HTTP 200:
 
 ### POST `/api/push/subscribe` — pública
 
-Exige `Origin` exactamente igual a la URL del aplicativo. En local, con `LOCAL_PREVIEW=true`, se admiten 127.0.0.1:5173 y :8787. Límite persistente de 10 solicitudes/minuto/IP de Cloudflare compartido con `/unsubscribe`.
+Exige `Origin` exactamente igual a `https://reserva.comunidadfortaleza.com` o `https://fabrizzitos-kekitos.fabrizziopelaez91.workers.dev`. Sin comodines; se rechazan otros subdominios, HTTP, puertos alternativos y orígenes ausentes. En local, con `LOCAL_PREVIEW=true`, se admiten 127.0.0.1:5173 y :8787. Límite persistente de 10 solicitudes/minuto/IP de Cloudflare compartido con `/unsubscribe`. El frontend usa `/api/push/*` y registra `/sw.js` con alcance `/`; el Service Worker resuelve enlaces mediante `self.location.origin`. Ambos funcionan en el dominio desde el que se abra el aplicativo. Las suscripciones/permisos son propios de cada origen y no se transfieren automáticamente entre dominios. Las claves VAPID existentes se conservan.
 
 ```json
 {"subscription":{"endpoint":"https://fcm.googleapis.com/fcm/send/IDENTIFICADOR","expirationTime":null,"keys":{"p256dh":"<base64url de 65 bytes, clave P-256 sin comprimir>","auth":"<base64url de 16 bytes>"}},"consent":true,"consentVersion":"promotions-v1","permission":"granted"}

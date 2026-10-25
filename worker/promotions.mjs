@@ -2,6 +2,7 @@ import { buildPushPayload } from '@block65/webcrypto-web-push';
 
 export const COMPANY = 'e6d10ec9-9d77-403e-ac6f-9273721fb713';
 export const ORIGIN = 'https://fabrizzitos-kekitos.fabrizziopelaez91.workers.dev';
+export const PUBLIC_ORIGINS = Object.freeze([ORIGIN, 'https://reserva.comunidadfortaleza.com']);
 export const CONSENT_VERSION = 'promotions-v1';
 export const LIMITS = Object.freeze({ maxSubscribers: 500, campaignLimit: 10, maxPerDay: 1 });
 const encoder = new TextEncoder();
@@ -54,7 +55,7 @@ async function adminAccess(request, env, now) {
 
 async function publicAccess(request, env, now) {
   const origin = request.headers.get('Origin');
-  if (origin !== ORIGIN && !(env.LOCAL_PREVIEW === 'true' && ['http://127.0.0.1:5173', 'http://127.0.0.1:8787'].includes(origin))) throw new PushError('Origen no permitido.', 403);
+  if (!PUBLIC_ORIGINS.includes(origin) && !(env.LOCAL_PREVIEW === 'true' && ['http://127.0.0.1:5173', 'http://127.0.0.1:8787'].includes(origin))) throw new PushError('Origen no permitido.', 403);
   const window = Math.floor(now / 60000);
   const bucket = `${window}:${await hash(request.headers.get('CF-Connecting-IP') || 'local')}`;
   const row = await env.DB.prepare(`INSERT INTO promotion_rate_limits(bucket,count,expires_at) VALUES (?,1,?) ON CONFLICT(bucket) DO UPDATE SET count=count+1 WHERE count<10 RETURNING count`).bind(bucket, (window + 2) * 60000).first();
