@@ -6,6 +6,8 @@ import '@fontsource-variable/outfit';
 import './style.css';
 import Promotions from './Promotions.jsx';
 import Account from './Account.jsx';
+import Navigation from './Navigation.jsx';
+import { APP_ROUTES, routeForUrl } from '../shared/navigation.mjs';
 import { LocalInfo } from '../shared/seo.mjs';
 import { SETTINGS, availableTimes, firstAvailableDate, limaDate, addDays, calculateTotal, money, validateBooking } from '../shared/booking.mjs';
 
@@ -128,6 +130,36 @@ function Confirmation({ result, data, onReset }) {
 }
 
 function App() {
+  const [path, setPath] = useState(() => routeForUrl(new URL(window.location.href)) || '/');
+  const [session, setSession] = useState(null);
+  const route = APP_ROUTES[path];
+  useEffect(() => {
+    const sync = () => {
+      const next = routeForUrl(new URL(window.location.href));
+      if (next) { setPath(next); if (window.location.hash && next !== '/') history.replaceState(null, '', next); }
+    };
+    sync();
+    const click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target.closest?.('a[href]');
+      if (!anchor || anchor.target || anchor.hasAttribute('download')) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (url.hash && !['#booking', '#cuenta', '#ruleta', '#promociones', '#ubicacion'].includes(url.hash)) return;
+      const next = routeForUrl(url);
+      if (url.origin !== window.location.origin || !next || (url.hash && next === '/')) return;
+      event.preventDefault();
+      if (next !== window.location.pathname || window.location.hash) history.pushState(null, '', next);
+      setPath(next);
+    };
+    document.addEventListener('click', click); window.addEventListener('popstate', sync); window.addEventListener('hashchange', sync);
+    return () => { document.removeEventListener('click', click); window.removeEventListener('popstate', sync); window.removeEventListener('hashchange', sync); };
+  }, []);
+  useEffect(() => {
+    if (path !== '/') document.title = route.title + " | Fabrizzito's Kekitos";
+    else document.title = 'Kekitos proteicos en Jesús María | Fabrizzito’s Kekitos';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.getElementById('page-content')?.focus({ preventScroll: true });
+  }, [path]);
   const [data, setData] = useState(initial);
   const [step, setStep] = useState(0);
   const [month, setMonth] = useState(initialDate.slice(0, 7));
@@ -220,12 +252,13 @@ function App() {
   };
 
   return <MotionConfig reducedMotion="user"><Intro />
-    <a className="skip-link" href="#booking">Ir a la reserva</a>
-    <header className="site-header"><a href="#" className="brand" aria-label="Fabrizzito's Kekitos, inicio"><img src="/images/favicon.png" alt="" width="48" height="48" /><span>FABRIZZITO'S<strong>KEKITOS</strong></span></a><nav aria-label="Navegación principal"><a href="#cuenta" className="nav-link">Mi cuenta</a><a href="#ruleta" className="nav-link">Ruleta</a><a className="button small-button" href="#booking">Reservar <ArrowUpRightIcon /></a></nav></header>
-    <main>
-      {!result && <><section className="hero"><div className="hero-copy"><div className="hero-location"><MapPin size={17} />Hechos en Jesús María</div><h1>Kekitos proteicos<br /><span>en Jesús María.</span></h1><p>Kekitos de banana y avena, batidos proteicos y un espacio reservado para ti.</p><a href="#booking" className="button primary hero-button">Reservar <ArrowRight size={21} /></a></div><div className="hero-visual"><img className="hero-image" src="/images/intro.webp" alt="Kekitos de avena y banana y batido de proteína de vainilla de Fabrizzito's Kekitos" width="660" height="660" fetchPriority="high" /><div className="fresh-tag"><Clock size={19} /><span>Recién hechos.<strong>A la hora que elijas.</strong></span></div></div></section>
-      <div className="service-strip"><span><CalendarBlank size={21} />Lunes a viernes</span><span><Clock size={21} />6:00 a 10:00 p. m.</span><span><MapPin size={21} />Av. Talara 450, Jesús María</span></div>
-      <section className="booking-section" id="booking"><div className="booking-topline"><div><h2>Separa tu próxima merienda.</h2><p>Elige tu pedido. Nosotros lo preparamos para ti.</p></div><span className="advance-note"><Clock size={17} />También para hoy</span></div>
+    <a className="skip-link" href="#page-content">Ir al contenido</a>
+    <Navigation path={path} session={session} />
+    <div className="app-content"><main id="page-content" tabIndex={-1}>
+      <div className="page-context"><span>Fabrizzito's Kekitos</span><strong>{route.title}</strong><a className="text-button" href={session ? '/mi-perfil' : '/iniciar-sesion'}><ShieldCheck size={18} />{session ? 'Mi perfil' : 'Iniciar sesión'}</a></div>
+      {(!result || path !== '/reservar') && <><section className="hero" hidden={path !== '/'}><div className="hero-copy"><div className="hero-location"><MapPin size={17} />Hechos en Jesús María</div><h1>Kekitos proteicos<br /><span>en Jesús María.</span></h1><p>Kekitos de banana y avena, batidos proteicos y un espacio reservado para ti.</p><a href="/reservar" className="button primary hero-button">Reservar <ArrowRight size={21} /></a></div><div className="hero-visual"><img className="hero-image" src="/images/intro.webp" alt="Kekitos de avena y banana y batido de proteína de vainilla de Fabrizzito's Kekitos" width="660" height="660" fetchPriority="high" /><div className="fresh-tag"><Clock size={19} /><span>Recién hechos.<strong>A la hora que elijas.</strong></span></div></div></section>
+      <div className="service-strip" hidden={path !== '/'}><span><CalendarBlank size={21} />Lunes a viernes</span><span><Clock size={21} />6:00 a 10:00 p. m.</span><span><MapPin size={21} />Av. Talara 450, Jesús María</span></div>
+      <section className="booking-section" id="booking" hidden={path !== '/reservar'}><div className="booking-topline"><div><h1>Separa tu próxima merienda.</h1><p>Elige tu pedido. Nosotros lo preparamos para ti.</p></div><span className="advance-note"><Clock size={17} />También para hoy</span></div>
       {config?.local && <div className="local-banner">Vista de prueba local. Las reservas y fotos de esta vista no se envían al negocio.</div>}
       {configError && !config && <Notice error>No hay conexión con el servicio de reservas. <button className="text-button" onClick={() => setRevision(r => r + 1)}>Volver a conectar</button></Notice>}
       <div className="booking-shell"><div className="booking-main"><ol className="steps" aria-label="Pasos de reserva">{['Tu pedido', 'Fecha y hora', 'Datos y pago'].map((label, i) => <li key={label} className={step === i ? 'active' : step > i ? 'complete' : ''} aria-current={step === i ? 'step' : undefined}><button type="button" disabled={i > step || busy} onClick={() => go(i)}><span>{step > i ? <Check size={15} weight="bold" /> : i + 1}</span>{label}</button></li>)}</ol>
@@ -251,13 +284,14 @@ function App() {
       <div className="form-footer">{step > 0 ? <button type="button" className="text-button" disabled={busy} onClick={() => go(step - 1)}><ArrowLeft size={17} />Volver</button> : <span className="small muted">Hechos para tu próxima pausa.</span>}{step < 2 ? <button type="button" className="button primary" onClick={next}>Continuar<ArrowRight size={19} /></button> : <button type="submit" className="button primary" disabled={busy || !config}>{busy ? 'Guardando reserva…' : 'Confirmar reserva'}{!busy && <Check size={19} />}</button>}</div>
       </form></div>
       <aside className="order-summary" aria-label="Resumen del pedido"><div className="summary-heading"><ShoppingBag size={21} /><h3>Tu reserva</h3></div><div className="summary-lines" aria-live="polite">{data.kekeQty > 0 && <div><span>{data.kekeQty} × Kekito proteico</span><strong>{money(data.kekeQty * 400)}</strong></div>}{data.shakeQty > 0 && <div><span>{data.shakeQty} × Batido proteico</span><strong>{money(data.shakeQty * 1200)}</strong></div>}{data.kekeQty + data.shakeQty === 0 && <p>Agrega un producto para comenzar.</p>}<div><span>{data.fulfillment === 'pickup' ? 'Recojo en local' : 'Delivery · Jesús María'}</span><strong>{data.fulfillment === 'pickup' ? 'Gratis' : 'S/ 6.00'}</strong></div></div><div className="summary-total"><span>Total</span><strong>{money(total)}</strong></div><div className="summary-schedule"><CalendarBlank size={20} /><div><span>{data.date ? dateLabel(data.date) : 'Tu fecha está por elegir'}</span>{data.time && <strong>{timeLabel(data.time)}</strong>}</div></div><div className="summary-address"><MapPin size={20} /><span>{data.fulfillment === 'pickup' ? SETTINGS.address : 'Delivery de kekitos solo en Jesús María'}</span></div><p className="summary-footnote">Tu reserva se confirma al terminar el formulario.</p></aside></div></section></>}
-      {result && <Confirmation result={result} data={data} onReset={() => { setResult(null); setData(initial); setReceipt(null); setStep(0); keyRef.current = null; setRevision(r => r + 1); }} />}
-      <section className="details" id="details"><div><h2>Una pausa rica,<br />sin complicarte.</h2><p>Elige un horario disponible y cómo recibir tu pedido.</p></div><div className="detail-items"><div><CalendarBlank size={25} /><h3>Reserva incluso para hoy</h3><p>Lunes a viernes, de 6 a 10 p. m. Puedes elegir hoy si quedan cupos, cada media hora.</p></div><div><MapPin size={25} /><h3>Pasa por tus favoritos</h3><p>Te esperamos en Av. Talara 450, Jesús María. Delivery de kekitos en el distrito por S/6.</p></div><div><WhatsappLogo size={25} /><h3>Si cambias de planes, avisa</h3><p>Escríbenos al <a href={`https://wa.me/51${SETTINGS.cancellationPhone}`} target="_blank" rel="noreferrer">992 272 521</a> para cancelar. Te estaremos esperando con tu pedido preparado.</p></div></div></section>
-      <LocalInfo />
-      <Account revision={revision} onProfile={applyProfile} />
-      <section className="promotions-section" id="promociones"><div><span className="eyebrow">DEL HORNO A TU PANTALLA</span><h2>Una buena pausa empieza con un aviso.</h2></div><Promotions /></section>
-      <section className="location-section" id="ubicacion" aria-labelledby="location-title"><div className="location-copy"><span className="location-icon"><MapPin size={26} /></span><h2 id="location-title">Tu pedido te espera aquí.</h2><p className="location-address">{SETTINGS.address}</p><p>Lunes a viernes<br /><strong>6:00 a 10:00 p. m.</strong></p><a className="button secondary" href="https://www.google.com/maps/search/?api=1&query=Av.+Talara+450,+Jes%C3%BAs+Mar%C3%ADa,+Lima" target="_blank" rel="noreferrer">Abrir Google Maps<ArrowUpRightIcon /></a><p className="location-delivery">Delivery de kekitos únicamente dentro de Jesús María.</p></div><iframe className="pickup-map" src={pickupMap} title="Mapa del punto de recojo en Av. Talara 450, Jesús María" width="600" height="450" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" /></section>
-    </main><footer><span>FABRIZZITO'S KEKITOS</span><p>Banana, avena y una buena pausa.</p><a href={`https://wa.me/51${SETTINGS.cancellationPhone}`} target="_blank" rel="noreferrer"><WhatsappLogo size={18} />Escríbenos</a></footer>
+      {result && path === '/reservar' && <Confirmation result={result} data={data} onReset={() => { setResult(null); setData(initial); setReceipt(null); setStep(0); keyRef.current = null; setRevision(r => r + 1); }} />}
+      <section className="details" id="details" hidden={path !== '/'}><div><h2>Una pausa rica,<br />sin complicarte.</h2><p>Elige un horario disponible y cómo recibir tu pedido.</p></div><div className="detail-items"><div><CalendarBlank size={25} /><h3>Reserva incluso para hoy</h3><p>Lunes a viernes, de 6 a 10 p. m. Puedes elegir hoy si quedan cupos, cada media hora.</p></div><div><MapPin size={25} /><h3>Pasa por tus favoritos</h3><p>Te esperamos en Av. Talara 450, Jesús María. Delivery de kekitos en el distrito por S/6.</p></div><div><WhatsappLogo size={25} /><h3>Si cambias de planes, avisa</h3><p>Escríbenos al <a href={`https://wa.me/51${SETTINGS.cancellationPhone}`} target="_blank" rel="noreferrer">992 272 521</a> para cancelar. Te estaremos esperando con tu pedido preparado.</p></div></div></section>
+      {path === '/' && <section className="home-club"><div><span className="club-eyebrow">TU PAUSA TIENE RECOMPENSA</span><h2>Tu lugar en el club.</h2><p>Guarda tus datos, revisa tus reservas y suma XP con tus compras. Un giro por cada 10 kekitos pagados y validados.</p><div className="home-club-links"><a className="button primary" href={session ? '/mi-cuenta' : '/iniciar-sesion'}>{session ? 'Ir a mi cuenta' : 'Iniciar sesión con Google'}<ArrowRight size={19} /></a><a className="text-button" href="/ruleta">Conocer la ruleta<ArrowRight size={18} /></a></div></div><img src="/images/roulette.webp" alt="Premios del club de kekitos" width="220" height="220" loading="lazy" /></section>}
+      {path === '/' && <LocalInfo />}
+      <Account revision={revision} onProfile={applyProfile} onSession={setSession} view={route.view} />
+      <section className="promotions-section" id="promociones" hidden={path !== '/promociones'}><div><span className="eyebrow">DEL HORNO A TU PANTALLA</span><h2>Una buena pausa empieza con un aviso.</h2></div><Promotions /></section>
+      <section className="location-section" id="ubicacion" hidden={path !== '/ubicacion'} aria-labelledby="location-title"><div className="location-copy"><span className="location-icon"><MapPin size={26} /></span><h2 id="location-title">Tu pedido te espera aquí.</h2><p className="location-address">{SETTINGS.address}</p><p>Lunes a viernes<br /><strong>6:00 a 10:00 p. m.</strong></p><a className="button secondary" href="https://www.google.com/maps/search/?api=1&query=Av.+Talara+450,+Jes%C3%BAs+Mar%C3%ADa,+Lima" target="_blank" rel="noreferrer">Abrir Google Maps<ArrowUpRightIcon /></a><p className="location-delivery">Delivery de kekitos únicamente dentro de Jesús María.</p></div><iframe className="pickup-map" src={pickupMap} title="Mapa del punto de recojo en Av. Talara 450, Jesús María" width="600" height="450" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" /></section>
+    </main><footer><span>FABRIZZITO'S KEKITOS</span><p>Banana, avena y una buena pausa.</p><a href={`https://wa.me/51${SETTINGS.cancellationPhone}`} target="_blank" rel="noreferrer"><WhatsappLogo size={18} />Escríbenos</a></footer></div>
   </MotionConfig>;
 }
 

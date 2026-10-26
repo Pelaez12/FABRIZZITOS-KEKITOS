@@ -86,7 +86,7 @@ export async function authRoutes(request, env, { now = Date.now(), fetcher = fet
         env.DB.prepare('DELETE FROM customer_sessions WHERE token_hash=?').bind(await sha256(previous)),
         env.DB.prepare('INSERT INTO customer_sessions VALUES (?,?,?)').bind(await sha256(token), user.id, now + 30 * 86400000),
       ]);
-      const headers = new Headers({ Location: '/#cuenta', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+      const headers = new Headers({ Location: '/mi-cuenta', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
       headers.append('Set-Cookie', cookie(SESSION, token, 30 * 86400)); headers.append('Set-Cookie', cookie(FLOW, '', 0));
       return new Response(null, { status: 303, headers });
     }

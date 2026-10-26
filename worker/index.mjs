@@ -7,6 +7,7 @@ import { accountRoutes } from './accounts.mjs';
 const MAX_RECEIPT = 5 * 1024 * 1024;
 const MAX_BODY = MAX_RECEIPT + 64 * 1024;
 // Build-time immutable static assets let the MCP deploy one complete Worker module.
+import { APP_ROUTES, appAssetPath } from '../shared/navigation.mjs';
 const STATIC_ASSETS = __STATIC_ASSETS__;
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 const digest = async (data) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), b => b.toString(16).padStart(2, '0')).join('');
@@ -150,20 +151,25 @@ export default {
       if (request.method === 'POST' && url.pathname === '/api/reservations') return await reserve(request, env, ctx);
       if (url.pathname.startsWith('/api/')) return json({ error: 'Ruta no disponible.' }, 404);
       if (!['GET', 'HEAD'].includes(request.method)) return new Response('Método no permitido', { status: 405, headers: { Allow: 'GET, HEAD' } });
+      const appPage = Object.hasOwn(APP_ROUTES, url.pathname);
+      const assetPath = appAssetPath(url.pathname);
       if (env.ASSETS) {
-        const response = await env.ASSETS.fetch(request);
+        const assetUrl = new URL(request.url); assetUrl.pathname = assetPath;
+        const response = await env.ASSETS.fetch(new Request(assetUrl, request));
         const headers = new Headers(response.headers);
+        if (appPage && url.pathname !== '/') headers.set('X-Robots-Tag', 'noindex, follow');
         headers.set('X-Content-Type-Options', 'nosniff');
         headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; frame-src https://www.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
         return new Response(response.body, { status: response.status, headers });
       }
-      const asset = STATIC_ASSETS[url.pathname === '/' ? '/index.html' : url.pathname];
+      const asset = STATIC_ASSETS[assetPath];
       if (asset) {
         const bytes = Uint8Array.from(atob(asset.content), c => c.charCodeAt(0));
         return new Response(request.method === 'HEAD' ? null : bytes, { headers: {
           'Content-Type': asset.type,
+          ...(appPage && url.pathname !== '/' ? { 'X-Robots-Tag': 'noindex, follow' } : {}),
           'Cache-Control': url.pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
           'X-Content-Type-Options': 'nosniff',
           'Referrer-Policy': 'strict-origin-when-cross-origin',

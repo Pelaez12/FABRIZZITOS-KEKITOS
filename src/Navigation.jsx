@@ -1,0 +1,15 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { House, CalendarBlank, UserCircle, Receipt, Target, Gift, Bell, MapPin, List, X, ArrowRight } from '@phosphor-icons/react';
+const links = [['/', 'Inicio', House], ['/reservar', 'Reservar', CalendarBlank], ['/mi-cuenta', 'Mi cuenta', UserCircle], ['/mis-reservas', 'Mis reservas', Receipt], ['/misiones', 'Misiones', Target], ['/ruleta', 'Ruleta y premios', Gift], ['/promociones', 'Promociones', Bell], ['/ubicacion', 'Dónde recoger', MapPin]];
+export function Brand() { return <a href="/" className="brand" aria-label="Fabrizzito's Kekitos, inicio"><img src="/images/favicon.png" alt="" width="48" height="48" /><span>FABRIZZITO'S<strong>KEKITOS</strong></span></a>; }
+export default function Navigation({ path, session }) {
+  const [open, setOpen] = useState(false), dialog = useRef(null), trigger = useRef(null);
+  useEffect(() => { setOpen(false); }, [path]);
+  useEffect(() => {
+    if (open) { dialog.current?.showModal(); const before = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { dialog.current?.close(); document.body.style.overflow = before; trigger.current?.focus(); }; }
+  }, [open]);
+  const accountHref = session ? '/mi-perfil' : '/iniciar-sesion';
+  const accountLabel = session ? 'Mi perfil' : 'Iniciar sesión';
+  const contents = <><Brand /><a className="button primary nav-account" href={accountHref}><UserCircle size={22} />{accountLabel}<ArrowRight size={17} /></a><nav aria-label="Navegación principal">{links.map(([href, label, Icon]) => <a key={href} href={href} aria-current={path === href ? 'page' : undefined}><Icon size={23} weight={path === href ? 'fill' : 'regular'} /><span>{label}</span></a>)}</nav><div className="sidebar-note"><span>Hechos en Jesús María</span><p>Banana, avena y una buena pausa.</p><a href="/reservar">Kekitos S/ 4 · Batidos S/ 12</a></div></>;
+  return <><aside className="app-sidebar">{contents}</aside><header className="mobile-header"><button className="icon-button" ref={trigger} type="button" aria-label="Abrir menú" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(true)}><List size={25} /></button><Brand /><a className="mobile-login" href={accountHref}><UserCircle size={23} /><span>{accountLabel}</span></a></header><dialog ref={dialog} id="mobile-menu" className="mobile-menu" aria-label="Menú de navegación" onCancel={() => setOpen(false)} onClick={event => { if (event.target === event.currentTarget) setOpen(false); }}><div className="drawer-content" onClick={event => { if (event.target.closest?.('a[href]')) setOpen(false); }}><button className="icon-button drawer-close" type="button" aria-label="Cerrar menú" onClick={() => setOpen(false)}><X size={23} /></button>{contents}</div></dialog><nav className="mobile-bottom" aria-label="Accesos rápidos">{[links[0], links[1], links[2]].map(([href, label, Icon]) => <a href={href} key={href} aria-current={path === href ? 'page' : undefined}><Icon size={23} weight={path === href ? 'fill' : 'regular'} /><span>{label}</span></a>)}</nav></>;
+}

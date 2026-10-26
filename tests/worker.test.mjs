@@ -5,6 +5,7 @@ import { Miniflare } from 'miniflare';
 import { build } from 'esbuild';
 import { firstAvailableDate, availableTimes, addDays } from '../shared/booking.mjs';
 import { sha256 } from '../worker/auth.mjs';
+import { APP_ROUTES, appAssetPath, routeForUrl } from '../shared/navigation.mjs';
 
 let mf, db, bucket;
 const date = firstAvailableDate();
@@ -16,7 +17,8 @@ async function send(booking = base, { key = crypto.randomUUID(), file } = {}) {
 }
 
 before(async () => {
-  const output = await build({ entryPoints: ['worker/index.mjs'], write: false, bundle: true, format: 'esm', platform: 'browser', target: 'es2022', define: { __STATIC_ASSETS__: '{}' } });
+  const assets = Object.fromEntries(Object.keys(APP_ROUTES).map(route => [appAssetPath(route), { content: Buffer.from('<!doctype html><h1>Aplicativo</h1>').toString('base64'), type: 'text/html;charset=utf-8' }]));
+  const output = await build({ entryPoints: ['worker/index.mjs'], write: false, bundle: true, format: 'esm', platform: 'browser', target: 'es2022', define: { __STATIC_ASSETS__: JSON.stringify(assets) } });
   mf = new Miniflare({ modules: true, script: output.outputFiles[0].text, compatibilityDate: '2026-08-06', d1Databases: { DB: 'fabrizzitos-test' }, r2Buckets: ['RECEIPTS'], bindings: { LOCAL_PREVIEW: 'true' } });
   db = await mf.getD1Database('DB'); bucket = await mf.getR2Bucket('RECEIPTS');
   for (const file of (await readdir('migrations')).filter(file => file.endsWith('.sql')).sort()) {
@@ -24,6 +26,22 @@ before(async () => {
   }
 });
 after(async () => { await mf?.dispose(); });
+
+test('las rutas de la app admiten recarga y conservan seguridad, SEO y 404', async () => {
+  for (const route of Object.keys(APP_ROUTES)) {
+    const response = await mf.dispatchFetch(`https://test.local${route}`);
+    assert.equal(response.status, 200, route);
+    assert.match(response.headers.get('Content-Type'), /text\/html/);
+    assert.match(response.headers.get('Content-Security-Policy'), /frame-ancestors 'none'/);
+    assert.equal(response.headers.get('X-Robots-Tag'), route === '/' ? null : 'noindex, follow');
+    const head = await mf.dispatchFetch(`https://test.local${route}`, { method: 'HEAD' });
+    assert.equal(await head.text(), '');
+  }
+  for (const route of ['/inventado', '/api/inventado', '/receipts/privado.png']) assert.equal((await mf.dispatchFetch(`https://test.local${route}`)).status, 404);
+  assert.equal(routeForUrl(new URL('https://test.local/#booking')), '/reservar');
+  assert.equal(routeForUrl(new URL('https://test.local/#cuenta')), '/mi-cuenta');
+  assert.equal(routeForUrl(new URL('https://test.local/api/auth/google/start')), null);
+});
 
 test('vincula reservas a la sesión y aísla los reintentos de otras cuentas', async () => {
   const token = 'd'.repeat(64), userId = crypto.randomUUID();
