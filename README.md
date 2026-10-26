@@ -89,4 +89,4 @@ El análisis de REA se resume en `research/calendly-analysis.md`. El código de 
 
 ## Club, perfil y ruleta
 
-La cuenta con Google, perfil, autocompletado, historial, niveles, XP, misiones y ruleta se describen en [CUSTOMER-CLUB.md](docs/CUSTOMER-CLUB.md). El login está preparado pero deshabilitado hasta configurar los secretos de Google. Las reservas como invitado siguen funcionando. La migración aditiva `0004_customer_accounts.sql` conserva las tablas anteriores.
+La cuenta con Google, perfil, autocompletado, historial, niveles, XP, misiones y ruleta se describen en [CUSTOMER-CLUB.md](docs/CUSTOMER-CLUB.md). Google Login está conectado mediante secretos de servidor al cliente de Fabrizzitos en FlexCoreOS y se verificó un ingreso real. Las reservas como invitado siguen funcionando. La migración aditiva `0004_customer_accounts.sql` conserva las tablas anteriores.

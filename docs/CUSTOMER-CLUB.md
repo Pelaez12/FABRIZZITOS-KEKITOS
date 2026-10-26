@@ -4,9 +4,9 @@
 
 Worker `fabrizzitos-kekitos`, dominio principal `https://reserva.comunidadfortaleza.com`, con workers.dev conservado. Reservas para el mismo día habilitadas, siempre lunes a viernes de 18:00 a 22:00, cada media hora, únicamente horarios futuros y cupo de 15 kekitos por día. Precios y delivery no cambian.
 
-El propietario indicó que entregará las credenciales de Google más adelante. El backend OAuth está implementado y probado con un proveedor simulado, pero el login queda deshabilitado en producción hasta instalar **GOOGLE_CLIENT_ID** y **GOOGLE_CLIENT_SECRET** como secretos del Worker. No se creó un login de demostración ni usuarios reales de prueba. Reservar como invitado sigue disponible.
+Google Login quedó conectado el 26/10/2026 con el último archivo OAuth facilitado por el propietario: cliente «FABRIZZITOS KEKITOS · Reservas» del proyecto **flexcoreos**. **GOOGLE_CLIENT_ID** y **GOOGLE_CLIENT_SECRET** están guardados como secretos del Worker. Se verificó enabled=true, cliente correcto, scopes openid/email/profile, PKCE S256 y callbacks de ambos dominios. El proyecto de Google está en producción para usuarios externos y se comprobó un ingreso real con la cuenta propietaria y retorno a una sesión autenticada del aplicativo. No se generaron pedidos ni premios. Reservar como invitado sigue disponible. La marca de consentimiento de Google es la compartida del proyecto FlexCoreOS (FLEXQR); no se modificó para no afectar a sus otros clientes.
 
-Crear un cliente OAuth de tipo aplicación web, con pantalla de consentimiento para este negocio. Redirect URI exacto principal:
+El cliente OAuth es de tipo aplicación web. Para futuras modificaciones, conservar estos callbacks exactos. Redirect URI exacto principal:
 
 ```text
 https://reserva.comunidadfortaleza.com/api/auth/google/callback
@@ -131,7 +131,7 @@ Respuesta `{updated:true,eventId,replay:false}`. Repetir el mismo eventId y cont
 
 **POST `/api/account/admin/rewards/:code/redeem`**, cuerpo `{}`, devuelve `{redeemed:true,discountCents:100|200|400}`. Un canje repetido devuelve 409. El central debe registrar la aplicación del beneficio al pedido/entrega y no descontarlo nuevamente. Los códigos de «Suerte para la próxima» no son premios y no se canjean.
 
-Este chat no cambió el panel central ni su política de revisión. Por tanto, además de configurar Google, **falta que FLEXQR llame a estas rutas al aprobar/rechazar pagos, entregar/cancelar pedidos y canjear premios**. Hasta entonces, no hay confirmación automática del estado de pago desde el central. El contrato de inbox y el almacenamiento privado de comprobantes permanecen como estaban.
+Este chat no cambió el panel central ni su política de revisión. Por tanto, **falta que FLEXQR llame a estas rutas al aprobar/rechazar pagos, entregar/cancelar pedidos y canjear premios**. Hasta entonces, no hay confirmación automática del estado de pago desde el central. El contrato de inbox y el almacenamiento privado de comprobantes permanecen como estaban.
 
 ## Verificación
 
