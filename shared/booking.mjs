@@ -5,7 +5,7 @@ export const SETTINGS = Object.freeze({
   yape: '955882306',
   yapeOwner: 'Luis Pelaez',
   cancellationPhone: '992272521',
-  minimumNoticeHours: 48,
+  minimumNoticeHours: 0,
   bookingHorizonDays: 90,
   dailyKekeLimit: 15,
   kekePrice: 400,
@@ -53,7 +53,7 @@ export function validateBooking(raw, now = new Date()) {
   const fulfillment = raw.fulfillment;
   if (!['pickup', 'delivery'].includes(fulfillment)) throw new BookingError('Elige recojo o delivery.', 400, 'fulfillment');
   if (fulfillment === 'delivery' && shakeQty > 0) throw new BookingError('Los batidos son solo para recojo. Retíralos del pedido para elegir delivery.', 400, 'fulfillment');
-  if (!availableTimes(raw.date, now).includes(raw.time)) throw new BookingError('Elige un horario de lunes a viernes, de 6 a 10 p. m., con al menos 48 horas de anticipación.', 400, 'date');
+  if (!availableTimes(raw.date, now).includes(raw.time)) throw new BookingError('Elige un horario que aún no haya pasado, de lunes a viernes, de 6 a 10 p. m. Puedes reservar para hoy si hay cupos.', 400, 'date');
   const name = String(raw.name || '').trim().replace(/\s+/g, ' ');
   if (name.length < 2 || name.length > 100) throw new BookingError('Escribe tu nombre (de 2 a 100 caracteres).', 400, 'name');
   const phone = String(raw.phone || '').replace(/[\s()+-]/g, '').replace(/^51(?=9\d{8}$)/, '');

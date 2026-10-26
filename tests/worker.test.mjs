@@ -4,6 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { Miniflare } from 'miniflare';
 import { build } from 'esbuild';
 import { firstAvailableDate, availableTimes, addDays } from '../shared/booking.mjs';
+import { sha256 } from '../worker/auth.mjs';
 
 let mf, db, bucket;
 const date = firstAvailableDate();
@@ -23,6 +24,22 @@ before(async () => {
   }
 });
 after(async () => { await mf?.dispose(); });
+
+test('vincula reservas a la sesión y aísla los reintentos de otras cuentas', async () => {
+  const token = 'd'.repeat(64), userId = crypto.randomUUID();
+  await db.prepare('INSERT INTO customer_accounts(id,google_sub,email,name,created_at) VALUES (?,?,?,?,?)').bind(userId, userId, 'mock@example.test', 'Cliente autenticado', Date.now()).run();
+  await db.prepare('INSERT INTO customer_sessions VALUES (?,?,?)').bind(await sha256(token), userId, Date.now() + 3600000).run();
+  const booking = { ...base, date: addDays(date, 14), time: '18:00' }, key = crypto.randomUUID();
+  const request = async (authenticated = true) => {
+    const r = new Request('https://reserva.comunidadfortaleza.com/api/reservations', { method: 'POST', headers: { Origin: 'https://reserva.comunidadfortaleza.com', ...(authenticated ? { Cookie: `__Host-fk_session=${token}` } : {}), 'Idempotency-Key': key }, body: form(booking) });
+    return { method: 'POST', headers: Object.fromEntries(r.headers), body: new Uint8Array(await r.arrayBuffer()) };
+  };
+  const a = await mf.dispatchFetch('https://reserva.comunidadfortaleza.com/api/reservations', await request()); assert.equal(a.status, 201); const result = await a.json();
+  assert.equal((await db.prepare('SELECT user_id FROM customer_orders WHERE reservation_id=?').bind(result.id).first()).user_id, userId);
+  assert.equal((await mf.dispatchFetch('https://reserva.comunidadfortaleza.com/api/reservations', await request())).status, 200);
+  assert.equal((await mf.dispatchFetch('https://reserva.comunidadfortaleza.com/api/reservations', await request(false))).status, 403);
+  const me = await mf.dispatchFetch('https://reserva.comunidadfortaleza.com/api/account/me', { headers: { Cookie: `__Host-fk_session=${token}` } }); assert.equal((await me.json()).orders.length, 1);
+});
 
 test('guarda reserva sin pago y un evento pendiente para el panel', async () => {
   const response = await send(); assert.equal(response.status, 201);

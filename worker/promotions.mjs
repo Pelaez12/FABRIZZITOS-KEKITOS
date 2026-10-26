@@ -45,7 +45,7 @@ export async function billingAccess(env, now) {
   return { allowed: true, phase: result.phase, expiresAt: result.expiresAt };
 }
 
-async function adminAccess(request, env, now) {
+export async function adminAccess(request, env, now) {
   if (!env.BILLING_GATE_TOKEN) throw new PushError('Falta configurar BILLING_GATE_TOKEN.', 503);
   if (!await equal(request.headers.get('Authorization'), `Bearer ${env.BILLING_GATE_TOKEN}`)) throw new PushError('No autorizado.', 401);
   if (request.headers.get('X-Flexqr-Company') !== COMPANY) throw new PushError('La empresa no coincide.', 403);

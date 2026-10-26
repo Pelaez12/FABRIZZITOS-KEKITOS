@@ -1,6 +1,8 @@
 import { SETTINGS, BookingError, availableTimes, isDate, validateBooking, slotDate } from '../shared/booking.mjs';
 import { queueStatement, scheduleDelivery, drainOutbox } from './flexqr.mjs';
 import { pushRoutes } from './promotions.mjs';
+import { authRoutes, currentAccount, accountOrigin, AccountError } from './auth.mjs';
+import { accountRoutes } from './accounts.mjs';
 
 const MAX_RECEIPT = 5 * 1024 * 1024;
 const MAX_BODY = MAX_RECEIPT + 64 * 1024;
@@ -40,6 +42,8 @@ function confirmation(row, local) {
 }
 
 async function reserve(request, env, ctx) {
+  const account = await currentAccount(request, env);
+  if (account) accountOrigin(request, env);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin && !(env.LOCAL_PREVIEW === 'true' && origin === 'http://127.0.0.1:5173')) throw new BookingError('Origen de solicitud no permitido.', 403);
   if (!request.headers.get('content-type')?.startsWith('multipart/form-data')) throw new BookingError('Formato de pedido no válido.', 415);
@@ -51,7 +55,11 @@ async function reserve(request, env, ctx) {
   try { raw = JSON.parse(form.get('booking')); } catch { throw new BookingError('No se pudo leer el pedido.'); }
   // Validate immutable fields before accepting any payment image or database write.
   const prior = await env.DB.prepare('SELECT * FROM reservations WHERE request_key = ?').bind(requestKey).first();
-  // An already-saved request remains retryable after its original 48 h cutoff.
+  if (prior) {
+    const owner = await env.DB.prepare('SELECT user_id FROM customer_orders WHERE reservation_id=?').bind(prior.id).first();
+    if (owner && owner.user_id !== account?.id) throw new BookingError('Esta reserva pertenece a otra cuenta.', 403);
+  }
+  // An already-saved request remains retryable after its original slot cutoff.
   const booking = validateBooking(raw, prior ? new Date(prior.created_at) : new Date());
   let receiptBytes, receiptMime = null, receiptHash = null;
   const receipt = form.get('receipt');
@@ -86,6 +94,7 @@ async function reserve(request, env, ctx) {
       .bind(id, reference, requestKey, payloadHash, booking.name, booking.phone, booking.fulfillment, booking.address, booking.district, booking.date, booking.time, slotDate(booking.date, booking.time).toISOString(), booking.kekeQty, booking.shakeQty, booking.total, paymentStatus, receiptKey, receiptMime, receiptHash, createdAt, booking.kekeQty, booking.date, SETTINGS.dailyKekeLimit);
     const event = (type, title) => env.DB.prepare('INSERT INTO admin_events (id,reservation_id,event_type,title,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM reservations WHERE id = ?)').bind(crypto.randomUUID(), id, type, title, createdAt, id);
     const statements = [insert, event('reservation.created', 'Tienes una nueva reserva')];
+    if (account) statements.push(env.DB.prepare('INSERT INTO customer_orders(reservation_id,user_id) SELECT ?,? WHERE EXISTS(SELECT 1 FROM reservations WHERE id=?)').bind(id, account.id, id));
     if (receiptBytes) statements.push(event('payment.review_requested', 'Tienes un nuevo pago por revisar'));
     statements.push(queueStatement(env, { id, reference, customer_name: booking.name, phone: booking.phone, fulfillment: booking.fulfillment, address: booking.address, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty, payment_status: paymentStatus, slot_at: slotDate(booking.date, booking.time).toISOString(), total_cents: booking.total, created_at: createdAt }));
     const results = await env.DB.batch(statements);
@@ -94,6 +103,11 @@ async function reserve(request, env, ctx) {
     // A parallel retry with the same key may have won the unique constraint.
     const prior = await env.DB.prepare('SELECT * FROM reservations WHERE request_key = ?').bind(requestKey).first();
     if (prior && prior.payload_hash === payloadHash) {
+      const owner = await env.DB.prepare('SELECT user_id FROM customer_orders WHERE reservation_id=?').bind(prior.id).first();
+      if (owner && owner.user_id !== account?.id) {
+        if (receiptKey && prior.receipt_key !== receiptKey) await env.RECEIPTS.delete(receiptKey);
+        throw new BookingError('Esta reserva pertenece a otra cuenta.', 403);
+      }
       // Preserve this receipt if the insert committed but its response was lost.
       if (receiptKey && prior.receipt_key !== receiptKey) await env.RECEIPTS.delete(receiptKey);
       scheduleDelivery(env, ctx, prior.id);
@@ -113,6 +127,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
+      const auth = await authRoutes(request, env);
+      if (auth) return auth;
+      const customer = await accountRoutes(request, env);
+      if (customer) return customer;
       const push = await pushRoutes(request, env);
       if (push) return push;
       if (request.method === 'GET' && url.pathname === '/api/config') return json({ ...SETTINGS, local: env.LOCAL_PREVIEW === 'true', receiptsAvailable: Boolean(env.RECEIPTS) });
@@ -155,6 +173,7 @@ export default {
       }
       return json({ error: 'Página no encontrada.' }, 404);
     } catch (error) {
+      if (error instanceof AccountError) return json({ error: error.message }, error.status);
       if (error instanceof BookingError) return json({ error: error.message, field: error.field }, error.status);
       // Do not log names, phone numbers, addresses or receipt data.
       console.error(JSON.stringify({ event: 'request_failed', route: url.pathname, errorType: error?.name || 'Error' }));

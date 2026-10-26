@@ -11,14 +11,14 @@ Aplicación de reservas de kekitos de banana y avena y batidos proteicos. React,
 | Delivery | S/6, únicamente kekitos dentro de Jesús María |
 | Recojo | Av. Talara 450, Jesús María |
 | Atención | Lunes a viernes, 18:00 a 22:00, cada 30 minutos |
-| Anticipación | Al menos 48 horas exactas |
+| Anticipación | Se permite el mismo día, en horarios futuros con cupos |
 | Cupo | 15 kekitos por fecha, entre todos los horarios |
 | Yape | 955882306, Luis Pelaez |
 | Cancelaciones | WhatsApp 992272521 |
 
 Los precios y cupos se validan en el servidor. Una captura de pago genera `pending_review`, nunca aprobación automática. Se puede reservar con `unpaid` sin adjuntar una foto. Las reservas consumen cupo aunque no estén pagadas; al marcar una reserva `cancelled`, su cupo vuelve a estar disponible.
 
-El catálogo y las reglas están en `shared/booking.mjs`. El calendario muestra los siguientes 90 días como horizonte técnico configurable; se mantiene el mínimo de 48 horas. No se especificó un cupo diario de batidos. La validación técnica admite de 0 a 99 batidos por pedido, sin inventar un límite de producción diario.
+El catálogo y las reglas están en `shared/booking.mjs`. El calendario muestra los siguientes 90 días como horizonte técnico configurable; se permiten reservas para el mismo día sin mínimo de 48 horas. No se especificó un cupo diario de batidos. La validación técnica admite de 0 a 99 batidos por pedido, sin inventar un límite de producción diario.
 
 ## Ejecutar localmente
 
@@ -47,7 +47,7 @@ npm test
 npm run build
 ```
 
-Las pruebas de integración ejecutan el Worker en Miniflare con D1 y R2 aislados. Cubren concurrencia del cupo, idempotencia, importes, 48 horas, fines de semana, restricciones de delivery y carga de comprobantes. El navegador se revisó también con una reserva completa local.
+Las pruebas de integración ejecutan el Worker en Miniflare con D1 y R2 aislados. Cubren concurrencia del cupo, idempotencia, importes, reservas para hoy, fines de semana, restricciones de delivery y carga de comprobantes. El navegador se revisó también con una reserva completa local.
 
 ## Recursos de Cloudflare
 
@@ -86,3 +86,7 @@ El contrato se documenta en [la guía oficial del panel](https://panel.comunidad
 Las tres imágenes originales aportadas están en `assets/originals/` y las versiones web en `public/images/`. La identidad visual final es FABRIZZITO'S KEKITOS; las imágenes originales contienen variaciones del nombre que se conservaron según lo solicitado.
 
 El análisis de REA se resume en `research/calendly-analysis.md`. El código de Calendly descargado para inspección y las evidencias completas quedan en `artifacts/`, excluido de Git. No se incorporó código de Calendly al aplicativo.
+
+## Club, perfil y ruleta
+
+La cuenta con Google, perfil, autocompletado, historial, niveles, XP, misiones y ruleta se describen en [CUSTOMER-CLUB.md](docs/CUSTOMER-CLUB.md). El login está preparado pero deshabilitado hasta configurar los secretos de Google. Las reservas como invitado siguen funcionando. La migración aditiva `0004_customer_accounts.sql` conserva las tablas anteriores.
