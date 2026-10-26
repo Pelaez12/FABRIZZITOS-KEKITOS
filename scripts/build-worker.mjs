@@ -1,9 +1,21 @@
 import { build } from 'esbuild';
-import { readdir, readFile, mkdir } from 'node:fs/promises';
+import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { IndexablePage, LOCAL_SCHEMA } from '../shared/seo.mjs';
 
 const types = { '.html': 'text/html;charset=utf-8', '.css': 'text/css;charset=utf-8', '.js': 'application/javascript;charset=utf-8', '.webp': 'image/webp', '.png': 'image/png', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 types['.webmanifest'] = 'application/manifest+json';
+types['.txt'] = 'text/plain;charset=utf-8';
+types['.xml'] = 'application/xml;charset=utf-8';
+const htmlPath = 'dist/client/index.html';
+const sourceHtml = await readFile(htmlPath, 'utf8');
+// Replace an earlier generated render when this script is run again without Vite.
+const publicHtml = sourceHtml.replace(/<div id="root">[\s\S]*?<\/div><!-- public-render-end -->|<div id="root"><\/div>/, `<div id="root">${renderToStaticMarkup(React.createElement(IndexablePage))}</div><!-- public-render-end -->`);
+const schema = JSON.stringify(LOCAL_SCHEMA).replaceAll('<', '\\u003c');
+const finalHtml = publicHtml.replace(/<script id="local-business-schema"[\s\S]*?<\/script>/g, '').replace('</head>', `<script id="local-business-schema" type="application/ld+json">${schema}</script></head>`);
+await writeFile(htmlPath, finalHtml);
 const assets = {};
 async function collect(dir) {
   for (const file of await readdir(dir, { withFileTypes: true })) {
