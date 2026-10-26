@@ -20,7 +20,7 @@ La fuente de contenido público es `shared/seo.mjs`, reutilizada en la interfaz 
 
 Propiedad: `https://reserva.comunidadfortaleza.com/`.
 
-Se envió `https://reserva.comunidadfortaleza.com/sitemap.xml`. Search Console confirmó **Correcto**, una URL descubierta, el 26/10/2026. La inspección inicial indicó «Descubierta: actualmente sin indexar» y sin rastreo previo. La solicitud de indexación es una petición a Google, no una confirmación de que la página ya esté indexada ni de una posición concreta.
+Se envió `https://reserva.comunidadfortaleza.com/sitemap.xml`. Search Console confirmó **Correcto**, una URL descubierta, el 26/10/2026. La inspección inicial indicó «Descubierta: actualmente sin indexar» y sin rastreo previo. La solicitud manual de indexación se intentó dos veces, incluida una recarga de Search Console; ambas fallaron con «No se ha podido establecer conexión con el servicio reCAPTCHA». No quedó confirmada como enviada. Reintentar desde Search Console cuando ese servicio esté disponible. El sitemap permanece aceptado y permite que Google descubra la URL por esa vía. Enviar una solicitud tampoco sería una confirmación de que la página ya esté indexada ni de una posición concreta.
 
 ## Seguimiento y límites
 
