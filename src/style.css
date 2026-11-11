@@ -1,6 +1,9 @@
 @import '@fontsource-variable/outfit';
 
-.gelatin-photo img{width:250px;height:250px;left:-76px;top:-50px}.kefir-photo img{width:250px;height:250px;left:-118px;top:-38px}
+.gelatin-photo img{width:250px;height:250px;left:-76px;top:-50px}.kefir-photo{width:88px;height:88px;margin-block:-3px}.kefir-photo img{inset:0;width:100%;height:100%;object-fit:cover;object-position:58% 42%}
+
+@media(max-width:1023px){.kefir-photo{width:72px;height:82px;margin-block:-3px}}
+@media(max-width:767px){.kefir-photo{width:70px;height:81px;margin-block:-3px}}
 
 /* App navigation: persistent on desktop, modal menu and quick actions on mobile. */
 [hidden]{display:none!important}
