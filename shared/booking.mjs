@@ -48,7 +48,7 @@ export function kefirTotal(quantity) {
 }
 
 export function pickupAddress(time) {
-  return time === '21:00' ? SETTINGS.latePickupAddress : SETTINGS.address;
+  return typeof time === 'string' && time >= '21:00' ? SETTINGS.latePickupAddress : SETTINGS.address;
 }
 
 export function calculateTotal({ kekeQty = 0, shakeQty = 0, gelatinQty = 0, kefirQty = 0, fulfillment }) {

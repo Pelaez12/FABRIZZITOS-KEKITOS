@@ -32,6 +32,8 @@ test('gelatinas y kéfir aplican el precio por pares y el recojo de las 9 p. m.'
   assert.equal(kefirTotal(3), 2800);
   assert.equal(kefirTotal(4), 3600);
   assert.equal(pickupAddress('21:00'), 'Col. Teresa Gonzales del Fanny-Piscina, Jesús María');
+  assert.equal(pickupAddress('21:30'), 'Col. Teresa Gonzales del Fanny-Piscina, Jesús María');
+  assert.equal(pickupAddress('22:00'), 'Col. Teresa Gonzales del Fanny-Piscina, Jesús María');
   assert.equal(pickupAddress('20:30'), 'Av. Talara 450, Jesús María');
   const order = validateBooking({ ...valid, shakeQty: 0, kekeQty: 0, gelatinQty: 1, kefirQty: 4, time: '21:00' }, now);
   assert.equal(order.total, 3900);

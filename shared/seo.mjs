@@ -32,7 +32,7 @@ export const LOCAL_SCHEMA = {
 export function LocalInfo() {
   return h('section', { className: 'local-info', id: 'kekitos-jesus-maria', 'aria-labelledby': 'local-info-title' },
     h('div', { className: 'local-info-heading' }, h('h2', { id: 'local-info-title' }, 'Kekitos de banana y avena en Jesús María'),
-      h('p', null, 'Kekitos proteicos, gelatinas sin azúcar, kéfir y batidos, con recojo en Jesús María. A las 9:00 p. m. el punto es Col. Teresa Gonzales del Fanny-Piscina.')),
+      h('p', null, 'Kekitos proteicos, gelatinas sin azúcar, kéfir y batidos, con recojo en Jesús María. Desde las 9:00 p. m. el punto es Col. Teresa Gonzales del Fanny-Piscina.')),
     h('div', { className: 'local-menu' },
       h('article', null, h('h3', null, 'Kekito proteico de banana y avena'), h('p', null, 'S/4 por unidad. Para recoger en el local o pedir por delivery dentro de Jesús María.')),
       h('article', null, h('h3', null, 'Batido proteico de vainilla'), h('p', null, 'S/12 por unidad. Solo recojo para acompañar tus kekitos.'))),
