@@ -39,7 +39,7 @@ function imageMime(bytes) {
 }
 
 function confirmation(row, local) {
-  return { id: row.id, reference: row.reference, date: row.booking_date, time: row.booking_time, total: row.total_cents, paymentStatus: row.payment_status, fulfillment: row.fulfillment, kekeQty: row.keke_qty, shakeQty: row.shake_qty, local };
+  return { id: row.id, reference: row.reference, date: row.booking_date, time: row.booking_time, total: row.total_cents, paymentStatus: row.payment_status, fulfillment: row.fulfillment, kekeQty: row.keke_qty, shakeQty: row.shake_qty, gelatinQty: row.gelatin_qty || 0, kefirQty: row.kefir_qty || 0, local };
 }
 
 async function reserve(request, env, ctx) {
@@ -89,15 +89,15 @@ async function reserve(request, env, ctx) {
   if (receiptBytes) await env.RECEIPTS.put(receiptKey, receiptBytes, { httpMetadata: { contentType: receiptMime }, customMetadata: { reservationId: id, sha256: receiptHash } });
   try {
     // The stock check and insert are ONE SQL statement, so concurrent requests cannot oversell.
-    const insert = env.DB.prepare(`INSERT INTO reservations (id, reference, request_key, payload_hash, customer_name, phone, fulfillment, address, district, booking_date, booking_time, slot_at, keke_qty, shake_qty, total_cents, payment_status, receipt_key, receipt_mime, receipt_sha256, notice_accepted, created_at)
-      SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?
+    const insert = env.DB.prepare(`INSERT INTO reservations (id, reference, request_key, payload_hash, customer_name, phone, fulfillment, address, district, booking_date, booking_time, slot_at, keke_qty, shake_qty, gelatin_qty, kefir_qty, total_cents, payment_status, receipt_key, receipt_mime, receipt_sha256, notice_accepted, created_at)
+      SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?
       WHERE ? + COALESCE((SELECT SUM(keke_qty) FROM reservations WHERE booking_date = ? AND reservation_status <> 'cancelled'),0) <= ?`)
-      .bind(id, reference, requestKey, payloadHash, booking.name, booking.phone, booking.fulfillment, booking.address, booking.district, booking.date, booking.time, slotDate(booking.date, booking.time).toISOString(), booking.kekeQty, booking.shakeQty, booking.total, paymentStatus, receiptKey, receiptMime, receiptHash, createdAt, booking.kekeQty, booking.date, SETTINGS.dailyKekeLimit);
+      .bind(id, reference, requestKey, payloadHash, booking.name, booking.phone, booking.fulfillment, booking.address, booking.district, booking.date, booking.time, slotDate(booking.date, booking.time).toISOString(), booking.kekeQty, booking.shakeQty, booking.gelatinQty, booking.kefirQty, booking.total, paymentStatus, receiptKey, receiptMime, receiptHash, createdAt, booking.kekeQty, booking.date, SETTINGS.dailyKekeLimit);
     const event = (type, title) => env.DB.prepare('INSERT INTO admin_events (id,reservation_id,event_type,title,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM reservations WHERE id = ?)').bind(crypto.randomUUID(), id, type, title, createdAt, id);
     const statements = [insert, event('reservation.created', 'Tienes una nueva reserva')];
     if (account) statements.push(env.DB.prepare('INSERT INTO customer_orders(reservation_id,user_id) SELECT ?,? WHERE EXISTS(SELECT 1 FROM reservations WHERE id=?)').bind(id, account.id, id));
     if (receiptBytes) statements.push(event('payment.review_requested', 'Tienes un nuevo pago por revisar'));
-    statements.push(queueStatement(env, { id, reference, customer_name: booking.name, phone: booking.phone, fulfillment: booking.fulfillment, address: booking.address, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty, payment_status: paymentStatus, slot_at: slotDate(booking.date, booking.time).toISOString(), total_cents: booking.total, created_at: createdAt }));
+    statements.push(queueStatement(env, { id, reference, customer_name: booking.name, phone: booking.phone, fulfillment: booking.fulfillment, address: booking.address, booking_time: booking.time, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty, gelatin_qty: booking.gelatinQty, kefir_qty: booking.kefirQty, payment_status: paymentStatus, slot_at: slotDate(booking.date, booking.time).toISOString(), total_cents: booking.total, created_at: createdAt }));
     const results = await env.DB.batch(statements);
     if (!results[0].meta.changes) throw new BookingError('Ya no quedan suficientes kekitos para ese día. Elige otra fecha o reduce la cantidad.', 409, 'stock');
   } catch (error) {
@@ -118,7 +118,7 @@ async function reserve(request, env, ctx) {
     throw error;
   }
   scheduleDelivery(env, ctx, id);
-  return json(confirmation({ id, reference, booking_date: booking.date, booking_time: booking.time, total_cents: booking.total, payment_status: paymentStatus, fulfillment: booking.fulfillment, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty }, env.LOCAL_PREVIEW === 'true'), 201);
+  return json(confirmation({ id, reference, booking_date: booking.date, booking_time: booking.time, total_cents: booking.total, payment_status: paymentStatus, fulfillment: booking.fulfillment, keke_qty: booking.kekeQty, shake_qty: booking.shakeQty, gelatin_qty: booking.gelatinQty, kefir_qty: booking.kefirQty }, env.LOCAL_PREVIEW === 'true'), 201);
 }
 
 export default {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { availableTimes, validateBooking, calculateTotal, firstAvailableDate, limaDate } from '../shared/booking.mjs';
+import { availableTimes, validateBooking, calculateTotal, kefirTotal, pickupAddress, firstAvailableDate, limaDate } from '../shared/booking.mjs';
 
 const now = new Date('2026-10-26T23:15:00Z'); // Monday, 18:15 Lima.
 const valid = { kekeQty: 2, shakeQty: 1, fulfillment: 'pickup', date: '2026-10-28', time: '18:30', name: 'Cliente de prueba', phone: '955000001', address: '', district: '', payment: 'later', accepted: true };
@@ -25,6 +25,16 @@ test('precios y delivery se calculan en centavos en el servidor', () => {
   assert.equal(validateBooking(valid, now).total, 2000);
   assert.equal(calculateTotal({ kekeQty: 3, shakeQty: 0, fulfillment: 'delivery' }), 1800);
   assert.equal(validateBooking({ ...valid, total: 1 }, now).total, 2000);
+});
+test('gelatinas y kéfir aplican el precio por pares y el recojo de las 9 p. m.', () => {
+  assert.equal(kefirTotal(1), 1000);
+  assert.equal(kefirTotal(2), 1800);
+  assert.equal(kefirTotal(3), 2800);
+  assert.equal(kefirTotal(4), 3600);
+  assert.equal(pickupAddress('21:00'), 'Col. Teresa Gonzales del Fanny-Piscina, Jesús María');
+  assert.equal(pickupAddress('20:30'), 'Av. Talara 450, Jesús María');
+  const order = validateBooking({ ...valid, shakeQty: 0, kekeQty: 0, gelatinQty: 1, kefirQty: 4, time: '21:00' }, now);
+  assert.equal(order.total, 3900);
 });
 test('delivery rechaza batidos y distritos diferentes a Jesús María', () => {
   assert.throws(() => validateBooking({ ...valid, fulfillment: 'delivery', district: 'Jesús María', address: 'Av. de prueba 123' }, now), /batidos/);

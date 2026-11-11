@@ -1,5 +1,7 @@
 @import '@fontsource-variable/outfit';
 
+.gelatin-photo img{width:250px;height:250px;left:-76px;top:-50px}.kefir-photo img{width:250px;height:250px;left:-118px;top:-38px}
+
 /* App navigation: persistent on desktop, modal menu and quick actions on mobile. */
 [hidden]{display:none!important}
 .app-sidebar{position:fixed;inset:0 auto 0 0;width:238px;padding:30px 18px 22px;background:var(--pale);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;z-index:var(--z-nav)}

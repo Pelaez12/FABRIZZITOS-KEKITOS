@@ -3,7 +3,7 @@ import { SETTINGS } from './booking.mjs';
 const h = React.createElement;
 export const SITE_URL = 'https://reserva.comunidadfortaleza.com/';
 export const SEO_TITLE = "Kekitos proteicos en Jesús María | Fabrizzito's Kekitos";
-export const SEO_DESCRIPTION = 'Kekitos de banana y avena a S/4 y batidos a S/12 en Jesús María. Recojo en Av. Talara 450 y delivery de kekitos en el distrito. Reserva online.';
+export const SEO_DESCRIPTION = 'Gelatinas sin azúcar a S/3, kéfir desde S/10, kekitos de banana y avena a S/4 y batidos a S/12 en Jesús María. Reserva online.';
 export const LOCAL_FAQ = Object.freeze([
   ['¿Dónde comprar kekitos proteicos en Jesús María?', 'Reserva en FABRIZZITO’S KEKITOS y recoge tu pedido en Av. Talara 450, Jesús María, Lima. Atendemos de lunes a viernes de 6:00 a 10:00 p. m.'],
   ['¿Cuánto cuestan los kekitos y los batidos?', 'Cada kekito proteico de banana y avena cuesta S/4. El batido proteico de vainilla cuesta S/12 y se entrega únicamente por recojo.'],
@@ -20,9 +20,11 @@ export const LOCAL_SCHEMA = {
       address: { '@type': 'PostalAddress', streetAddress: 'Av. Talara 450', addressLocality: 'Jesús María', addressRegion: 'Lima', addressCountry: 'PE' },
       areaServed: { '@type': 'Place', name: 'Jesús María, Lima, Perú' },
       openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '18:00', closes: '22:00' }],
-      hasMenu: { '@type': 'Menu', name: 'Kekitos y batidos proteicos', hasMenuSection: { '@type': 'MenuSection', name: 'Nuestros productos', hasMenuItem: [
+      hasMenu: { '@type': 'Menu', name: 'Kekitos, gelatinas, kéfir y batidos', hasMenuSection: { '@type': 'MenuSection', name: 'Nuestros productos', hasMenuItem: [
         { '@type': 'MenuItem', name: 'Kekito proteico de banana y avena', description: 'Kekito de banana y avena, disponible para recojo o delivery en Jesús María.', offers: { '@type': 'Offer', price: (SETTINGS.kekePrice / 100).toFixed(2), priceCurrency: 'PEN', url: `${SITE_URL}reservar` } },
         { '@type': 'MenuItem', name: 'Batido proteico de vainilla', description: 'Batido de proteína de vainilla, solo para recojo en el local.', offers: { '@type': 'Offer', price: (SETTINGS.shakePrice / 100).toFixed(2), priceCurrency: 'PEN', url: `${SITE_URL}reservar` } },
+        { '@type': 'MenuItem', name: 'Gelatina sin azúcar', description: 'Gelatina sin azúcar, disponible para recojo.', offers: { '@type': 'Offer', price: (SETTINGS.gelatinPrice / 100).toFixed(2), priceCurrency: 'PEN', url: `${SITE_URL}reservar` } },
+        { '@type': 'MenuItem', name: 'Kéfir', description: 'Kéfir a S/10 o dos por S/18, disponible para recojo.', offers: { '@type': 'Offer', price: (SETTINGS.kefirPrice / 100).toFixed(2), priceCurrency: 'PEN', url: `${SITE_URL}reservar` } },
       ] } },
     },
   ],
@@ -30,7 +32,7 @@ export const LOCAL_SCHEMA = {
 export function LocalInfo() {
   return h('section', { className: 'local-info', id: 'kekitos-jesus-maria', 'aria-labelledby': 'local-info-title' },
     h('div', { className: 'local-info-heading' }, h('h2', { id: 'local-info-title' }, 'Kekitos de banana y avena en Jesús María'),
-      h('p', null, 'Una merienda de kekitos proteicos y batidos de vainilla, con recojo en Av. Talara 450. Reserva tus cantidades y elige un horario disponible.')),
+      h('p', null, 'Kekitos proteicos, gelatinas sin azúcar, kéfir y batidos, con recojo en Jesús María. A las 9:00 p. m. el punto es Col. Teresa Gonzales del Fanny-Piscina.')),
     h('div', { className: 'local-menu' },
       h('article', null, h('h3', null, 'Kekito proteico de banana y avena'), h('p', null, 'S/4 por unidad. Para recoger en el local o pedir por delivery dentro de Jesús María.')),
       h('article', null, h('h3', null, 'Batido proteico de vainilla'), h('p', null, 'S/12 por unidad. Solo recojo para acompañar tus kekitos.'))),
