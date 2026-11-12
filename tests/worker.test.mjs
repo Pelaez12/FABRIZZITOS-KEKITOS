@@ -66,6 +66,12 @@ test('guarda reserva sin pago y un evento pendiente para el panel', async () => 
   const queued = await db.prepare('SELECT * FROM flexqr_outbox WHERE reservation_id = ?').bind(result.id).first(); assert.equal(queued.status, 'queued'); assert.equal(JSON.parse(queued.payload_json).sourceId, `fabrizzitos:${result.id}`);
   const events = await db.prepare('SELECT * FROM admin_events WHERE reservation_id = ?').bind(result.id).all(); assert.equal(events.results.length, 1); assert.equal(events.results[0].delivery_status, 'pending');
 });
+test('guarda Gatorade y agua en la reserva y en la comanda', async () => {
+  const response = await send({ ...base, date: addDays(date, 12), kekeQty: 0, gatoradeQty: 4, waterQty: 0 }); assert.equal(response.status, 201);
+  const result = await response.json(); assert.equal(result.gatoradeQty, 4); assert.equal(result.total, 1000);
+  const row = await db.prepare('SELECT gatorade_qty,water_qty,total_cents FROM reservations WHERE id=?').bind(result.id).first(); assert.deepEqual(row, { gatorade_qty: 4, water_qty: 0, total_cents: 1000 });
+  const payload = JSON.parse((await db.prepare('SELECT payload_json FROM flexqr_outbox WHERE reservation_id=?').bind(result.id).first()).payload_json); assert.match(payload.summary, /4 Gatorade/);
+});
 test('reintentar no duplica la reserva ni descuenta stock dos veces', async () => {
   const key = crypto.randomUUID();
   const a = await send(base, { key }); const b = await send(base, { key });

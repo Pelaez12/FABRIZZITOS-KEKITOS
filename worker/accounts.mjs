@@ -65,7 +65,7 @@ export async function accountRoutes(request, env, { now = Date.now(), roll = sec
     const user = await requireAccount(request, env, now);
     if (request.method === 'GET' && path === '/api/account/me') {
       const state = await stateFor(env, user.id, now);
-      return accountJson({ profile: { name: user.name, email: user.email, phone: user.phone, address: user.address }, ...state, orders: state.orders.slice(0, 30).map(order => ({ id: order.id, reference: order.reference, date: order.booking_date, time: order.booking_time, kekeQty: order.keke_qty, shakeQty: order.shake_qty, total: order.total_cents, paymentStatus: order.payment_status, status: order.reservation_status })), levels: LEVELS, prizes: PRIZES });
+      return accountJson({ profile: { name: user.name, email: user.email, phone: user.phone, address: user.address }, ...state, orders: state.orders.slice(0, 30).map(order => ({ id: order.id, reference: order.reference, date: order.booking_date, time: order.booking_time, kekeQty: order.keke_qty, shakeQty: order.shake_qty, gelatinQty: order.gelatin_qty || 0, kefirQty: order.kefir_qty || 0, waterQty: order.water_qty || 0, gatoradeQty: order.gatorade_qty || 0, total: order.total_cents, paymentStatus: order.payment_status, status: order.reservation_status })), levels: LEVELS, prizes: PRIZES });
     }
     if (request.method !== 'POST') throw new AccountError('Método no permitido.', 405);
     accountOrigin(request, env); const body = await accountBody(request);

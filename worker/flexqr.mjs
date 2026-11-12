@@ -7,7 +7,7 @@ export function flexqrConfigured(env) {
 }
 
 export function reservationPayload(row) {
-  const products = [row.keke_qty ? `${row.keke_qty} kekito(s) proteico(s) de banana y avena` : '', row.shake_qty ? `${row.shake_qty} batido(s) proteico(s) de vainilla` : '', row.gelatin_qty ? `${row.gelatin_qty} gelatina(s) sin azúcar` : '', row.kefir_qty ? `${row.kefir_qty} kéfir` : ''].filter(Boolean).join('; ');
+  const products = [row.keke_qty ? `${row.keke_qty} kekito(s) proteico(s) de banana y avena` : '', row.shake_qty ? `${row.shake_qty} batido(s) proteico(s) de vainilla` : '', row.gelatin_qty ? `${row.gelatin_qty} gelatina(s) sin azúcar` : '', row.kefir_qty ? `${row.kefir_qty} kéfir` : '', row.water_qty ? `${row.water_qty} agua(s) embotellada(s)` : '', row.gatorade_qty ? `${row.gatorade_qty} Gatorade(s)${row.gatorade_qty >= 4 ? ' (packs promocionales de 4 por S/10)' : ''}` : ''].filter(Boolean).join('; ');
   const pickup = typeof row.booking_time === 'string' && row.booking_time >= '21:00' ? 'Col. Teresa Gonzales del Fanny-Piscina, Jesús María' : 'Av. Talara 450, Jesús María';
   const delivery = row.fulfillment === 'delivery' ? `Delivery: ${row.address}, Jesús María (S/6 incluido).` : `Recojo: ${pickup}.`;
   const payment = row.payment_status === 'pending_review' ? 'Comprobante recibido, pendiente de revisión. Foto privada en el aplicativo de origen.' : row.payment_status === 'approved' ? 'Pago validado en origen.' : 'Pago pendiente.';
