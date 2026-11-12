@@ -51,8 +51,9 @@ export function kefirTotal(quantity) {
 }
 
 export function hydrationTotal(quantity) {
-  const packs = Math.floor(quantity / SETTINGS.hydrationPackSize);
-  return packs * SETTINGS.hydrationPackPrice + (quantity % SETTINGS.hydrationPackSize) * SETTINGS.hydrationUnitPrice;
+  return quantity > 0 && quantity % SETTINGS.hydrationPackSize === 0
+    ? (quantity / SETTINGS.hydrationPackSize) * SETTINGS.hydrationPackPrice
+    : quantity * SETTINGS.hydrationUnitPrice;
 }
 
 export function pickupAddress(time) {

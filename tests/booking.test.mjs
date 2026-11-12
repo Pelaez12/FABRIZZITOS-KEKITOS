@@ -41,7 +41,7 @@ test('gelatinas y kéfir aplican el precio por pares y el recojo de las 9 p. m.'
 test('hidratantes aplican 4 por S/10 y conservan el detalle por tipo', () => {
   assert.equal(hydrationTotal(1), 300);
   assert.equal(hydrationTotal(4), 1000);
-  assert.equal(hydrationTotal(5), 1300);
+  assert.equal(hydrationTotal(5), 1500);
   assert.equal(hydrationTotal(8), 2000);
   const order = validateBooking({ ...valid, kekeQty: 0, shakeQty: 0, waterQty: 0, gatoradeQty: 4 }, now);
   assert.equal(order.gatoradeQty, 4);
